@@ -8,9 +8,6 @@
 //    this.addWindow(this.textbox);
 //}; 
 
-//TODO: replace "array of character lengths" with a mapping/cache of
-// character => width, so the only *array* we need is the string itself
-
 //-----------------------------------------------------------------------------
 // Window_Horz2
 //
