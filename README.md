@@ -14,5 +14,6 @@ Allows for the passage of map/world "time" (ticks, during which events can trigg
 ExtraWindows:
 -------------
 Contains a port of the XP Textbox, in Window form. Adds additional features relating to type/input checking and substring highlighting/copy-pasting of text. Because it was ported, and because many features were added onto code that was not originally intended to support those features, the code is a tangled mess. Ideally it would be written with more handlers and fewer interlocking classes.
+Additionally contains a Window_Dropdown class to support selecting an option from a drop-down list.
 
 main.js: a special version of main that most users will have no use for.
