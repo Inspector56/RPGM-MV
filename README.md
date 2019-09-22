@@ -11,4 +11,8 @@ Late Arrivals:
 --------------
 Allows for the passage of map/world "time" (ticks, during which events can trigger, move, etc); it is designed so that battle events/troops will stack; if for instance, a pursuer reaches the player on the map while they are still on the combat screen and a "Battle Processing" event is triggered, the enemies from the newly-triggered troop will be added to the current combat screen (up to a configurable limit of battlers on the screen).
 
+ExtraWindows:
+-------------
+Contains a port of the XP Textbox, in Window form. Adds additional features relating to type/input checking and substring highlighting/copy-pasting of text. Because it was ported, and because many features were added onto code that was not originally intended to support those features, the code is a tangled mess. Ideally it would be written with more handlers and fewer interlocking classes.
+
 main.js: a special version of main that most users will have no use for.
