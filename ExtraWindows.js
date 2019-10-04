@@ -1,12 +1,59 @@
 
-//var _alias_wintext_sct_create_com_window = Scene_Title.prototype.createCommandWindow;
-//Scene_Title.prototype.createCommandWindow = function() {
-//    _alias_wintext_sct_create_com_window.call(this);
-//    this.textbox = new Window_Textbox({x: 200, y: 200, type: 'number', err_dir: 'right', 'hint': '175' });
-//    this.dropdown = new Window_Dropdown(50, 250, ['hall', 'eo', 'breh', 'nwis']);
-//    this.addWindow(this.dropdown);
-//    this.addWindow(this.textbox);
-//}; 
+/*
+var _alias_wintext_sct_create_com_window = Scene_Title.prototype.createCommandWindow;
+Scene_Title.prototype.createCommandWindow = function() {
+    _alias_wintext_sct_create_com_window.call(this);
+    this.textbox = new Window_Textbox({x: 200, y: 200, type: 'number', err_dir: 'right', 'hint': '175' });
+    this.addWindow(this.textbox);
+    this.dropdown = new Window_Dropdown(['hall', 'eo', 'breh', 'nwis'], 50, 250, {'width': 200, 'align':'bottom'});
+    this.dropdown.setCommandList(['ooga', 'wooga','booga','slooga','mooga','rrug'])
+    this.addWindow(this.dropdown);
+    this.mp = new Window_MultiPick(['hall', 'eo', 'breh', 'nwis'], 400, 100, {'width':250, 'maxcols':3});
+    this.addWindow(this.mp);
+}; */
+
+Window_Base.prototype.drawWrapText = function(text,indent, align) {
+  var base = 0; var lineHeight = 20;
+  var x = base; var y = -10;
+  var indented = false;
+  indent = indent || 0;
+  align = align || 'left';
+  this.contents.clear();
+  var words = text.split(/\s/);
+
+  var space = this.textWidth(" ");
+  var i = 0;
+  while (i < words.length) {
+    var word = words[i];
+    var ww = this.textWidth(word);
+    if (x+((x==base)?0:space)+ww < this.width) {
+      this.drawText(((x==base)?"":" ")+word, x, y, this.width, align);
+      x += ((x==base)?0:space)+ww;//draw this word
+      i = i+1;
+    } else if (x != base) {
+      if (!indented) {indented = true; base+=indent;}
+      x = base;
+      y += lineHeight;
+    } else {
+      //if a single line is too long, have to break it
+      var j = 0;
+      while (j < word.length) {
+        var l = this.textWidth(word[j]);
+        if (x+l < this.width) {
+          this.drawText(word[j], x, y, this.width, align);
+          j = j+1; x+=l;//draw this word
+        } else if (x != base) {
+          if (!indented) {indented = true; base+=indent;}
+          x = base;
+          y += lineHeight;
+        } else {
+          return; //else we'd never finish; window is likely way too narrow
+        }
+      }
+      i = i+1;
+    }
+  }
+}
 
 //-----------------------------------------------------------------------------
 // Window_Horz2
@@ -20,15 +67,27 @@ function Window_Horz2() {
 Window_Horz2.prototype = Object.create(Window_HorzCommand.prototype);
 Window_Horz2.prototype.constructor = Window_Horz2;
 
-Window_Horz2.prototype.initialize = function(x, y, width, maxcols) {
-    this._windowWidth = width || Graphics.boxWidth;
-    this._maxCols = maxcols || 2;
+Window_Horz2.prototype.initialize = function(x, y, specs) {
+    this._windowWidth = specs['width'] || Graphics.boxWidth;
+    this._maxCols = specs['maxcols'] || 1;
+    this._visRows = specs['maxrows'] || -1;
+    this._windowHeight = specs['height'] || -1;
     Window_HorzCommand.prototype.initialize.call(this, x, y);
 };
 
 Window_Horz2.prototype.windowWidth = function() {
     return this._windowWidth;
 };
+
+Window_Horz2.prototype.windowHeight = function() {
+  if (this._windowHeight > 0) return this._windowHeight;
+  else return Window_Command.prototype.windowHeight.call(this);
+}
+
+Window_Horz2.prototype.numVisibleRows = function() {
+  if (this._visRows > 0) return this._visRows;
+  else return Window_Command.prototype.numVisibleRows.call(this);
+}
 
 Window_Horz2.prototype.maxCols = function() {
     return this._maxCols;
@@ -37,27 +96,102 @@ Window_Horz2.prototype.maxCols = function() {
 //-----------------------------------------------------------------------------
 // Window_CommandList
 //
-// Version of Window_Command where the command list is specified at initialization
+// Version of Window_Command (Window_Horz2) where the command list is specified at initialization
 function Window_CommandList() {
     this.initialize.apply(this, arguments);
 }
 
-Window_CommandList.prototype = Object.create(Window_Command.prototype);
+Window_CommandList.prototype = Object.create(Window_Horz2.prototype);
 Window_CommandList.prototype.constructor = Window_CommandList;
 
-Window_CommandList.prototype.initialize = function(x, y, list) {
+Window_CommandList.prototype.initialize = function(list, x, y, specs) {
     list = list || [];
     this._itemlist = list;
-    Window_Command.prototype.initialize.call(this, x, y);
+    Window_Horz2.prototype.initialize.call(this, x, y, specs);
 };
 
 Window_CommandList.prototype.makeCommandList = function(list) {
     list = (list && Array.isArray(list)) ? list : this._itemlist;
-    this._itemlist = list;
-    for (var i in this._itemlist) {
-        this.addCommand(this._itemlist[i], this._itemlist[i]);
+    if (this._itemlist != list) {
+      this._itemlist = list;
+      this.refresh();
+    } else {
+      for (var i in this._itemlist) {
+          this.addCommand(this._itemlist[i], this._itemlist[i]);
+      }
     }
 }
+
+//Window_CommandList.prototype.windowWidth = function() {
+//    return 240;
+//};
+
+//-----------------------------------------------------------------------------
+// Window_MultiPick
+//
+// Divergent of WindowHorz2 where multiple items can be selected
+
+function Window_MultiPick() {
+    this.initialize.apply(this, arguments);
+}
+
+Window_MultiPick.prototype = Object.create(Window_CommandList.prototype);
+Window_MultiPick.prototype.constructor = Window_MultiPick;
+
+Window_MultiPick.prototype.initialize = function(list, x, y, specs) {
+    this._selected = [];
+    Window_CommandList.prototype.initialize.call(this, list, x, y, specs);
+};
+
+Window_MultiPick.prototype.addCommand = function(name, symbol, enabled, ext) {
+    Window_Command.prototype.addCommand.call(this, name, symbol, enabled, ext);
+    if (!this._handlers) this._selected.push(false);
+};
+
+Window_MultiPick.prototype.clearCommandList = function() {
+    Window_CommandList.prototype.clearCommandList.call(this);
+    //this._selected = [];
+};
+
+Window_MultiPick.prototype.select = function(target) {
+    if (Array.isArray(target)) {
+      this._selected = target;
+    } else {
+      Window_CommandList.prototype.select.call(this, target);
+    }
+}
+
+Window_MultiPick.prototype.drawItem = function(index) {
+    var rect = this.itemRectForText(index);
+    var align = this.itemTextAlign();
+    if (this._selected[index]) this.chosenTextColor(); else this.resetTextColor();
+    this.changePaintOpacity(this.isCommandEnabled(index));
+    this.drawText(this.commandName(index), rect.x, rect.y, rect.width, align);
+};
+
+Window_MultiPick.prototype.chosenTextColor = function() {
+    this.changeTextColor(this.hpGaugeColor2());
+};
+
+Window_MultiPick.prototype.processOk = function() {
+    if (this.isCurrentItemEnabled()) {
+        this.playOkSound();
+        this._selected[this.index()] = !this._selected[this.index()];
+        this.refresh();
+
+    } else {
+        this.playBuzzerSound();
+    }
+};
+
+Window_MultiPick.prototype.getSelected = function() {
+    var results = [];
+    for (var i in this._selected) {
+        if (this._selected[i]) {
+            results.push(this._list[i]);
+        }
+    } return results;
+};
 
 //-----------------------------------------------------------------------------
 // Window_Dropdown
@@ -67,45 +201,103 @@ Window_CommandList.prototype.makeCommandList = function(list) {
 function Window_Dropdown() {
     this.initialize.apply(this, arguments);
 }
-Window_Dropdown.prototype = Object.create(Window_Command.prototype);
+Window_Dropdown.prototype = Object.create(Window_CommandList.prototype);
 Window_Dropdown.prototype.constructor = Window_Dropdown;
 
-Window_Dropdown.prototype.initialize = function(x, y, options, opts) {
-    this._dropIndex = -1;
+Window_Dropdown.prototype.initialize = function(options, x, y, opts) {
+    this._selecting = false;
     opts = opts || {};
-    this._options = new Window_CommandList(x, y, options); //TODO: change y based on settings
+    this._noneText = opts['none_text'] || 'None';
+    this._defaultSelect = opts['default'] || false;
+    this._dropIndex = (this._defaultSelect) ? 0 : -1;
+    if (opts['width']) {this._maxWidth = opts['width'];}
+    else this._maxWidth = Window_Command.prototype.windowWidth.call(this);
+    this._options = new Window_CommandList(options, x, y, {'width':this._maxWidth});
     for (var i in options) {
         var option = options[i];
-        //this._options.addCommand(option, option);
         this._options.setHandler(option, this.chooseUnfocus.bind(this));
     };
-    if (opts['width']) {this._maxWidth = opts['width'];}
-    Window_Command.prototype.initialize.call(this, x, y);
-    align = opts['align'] || 'center'; var dy = 0;
-    switch(align) {
-        case 'top':
-            break;
-        case 'bottom':
-            dy -= (this._options.height - this.height);
-            break;
-        case 'center':
-        default:
-            dy -= (this._options.height - this.height)/2;
-    }
-    y = Math.min(Math.max(0, y), Graphics.boxHeight);
-    this._options.move(0, dy, this._options.width, this._options.height);
+    Window_CommandList.prototype.initialize.call(this,[], x, y, {'width':this._maxWidth});
+    align = opts['align'] || 'center';
+    this.alignOptions(align);
+    this._options.hide()
     this.addChild(this._options);
     this.revertUnfocus();
 };
+
+Window_Dropdown.prototype.alignOptions = function(align) {
+  align = align || this.align || 'center';
+  this.align = align;
+  var dy = 0.0;
+  switch(align) {
+      case 'top':
+          break;
+      case 'bottom':
+          dy = 1.0;
+          break;
+      case 'center':
+          dy = 1.0/2.0;
+          break;
+      default:
+          dy = parseFloat(align);
+          if (isNaN(dy)) dy = 1.0/2.0;
+  }
+  this.dy = dy;
+  this._options.move(0, dy*(this.height - this._options.height), this._options.width, this._options.height);
+}
+
+Window_Dropdown.prototype.update = function() {
+  Window_CommandList.prototype.update.call(this);
+  if (this._options._opening || this._options._closing) {
+    var scaled = (this._options.height*(this._options._openness/255.0));
+    //var y = (this._options._opening)?this.standardPadding():-this.standardPadding();
+    var goalY = this.dy*(this.height - scaled);
+    this._options.y = goalY+(scaled/2.0)-(this._options.height/2.0);
+  } else { this._options.y = this.dy*(this.height - this._options.height); }
+}
+
+Window_Dropdown.prototype.setCommandList = function(list, index, align) {
+  var _options = new Window_CommandList(list, this.x, this.y, {'width':this._windowWidth,'maxcols':this._maxCols,'maxrows':this._visRows});
+  this.removeChild(this._options);
+  this._options = _options;
+  this._options.hide();
+  this.addChild(this._options);
+  this.alignOptions(align);
+  for (var i in list) {
+      var option = list[i];
+      this._options.setHandler(option, this.chooseUnfocus.bind(this));
+  };
+  this._dropIndex = index || ((this._defaultSelect) ? 0 : -1);
+  this.revertUnfocus();
+  this.refresh();
+}
+
+Window_Dropdown.prototype.refresh = function() {
+  Window_CommandList.prototype.refresh.call(this);
+  this.drawNone();
+}
+
+Window_Dropdown.prototype.hasOptions = function() {
+  return (!(!this._options._list || this._options._list.length == 0));
+}
+
+Window_Dropdown.prototype.drawNone = function() {
+  if (!this.hasOptions()) {
+    this.changeTextColor(this.systemColor());
+    this.drawText(this._noneText, 0, 0, this.width, 'left');
+  }
+}
 
 Window_Dropdown.prototype.makeCommandList = function() {
     if (!this._handlers) { //first time
         var options = this._options._list;
         var max = "";
+        //currently this does not do anything; this was partial code towards
+        //making it defualt to a width that accomodates the largest command
         for (var i in options) {
             var option = options[i];
             if (this._options.textWidth(option) > this._options.textWidth(max)) {
-                if (this._maxWidth && this.textWidth(option) <= this._maxWidth) {
+                if (this._maxWidth && this._options.textWidth(option) <= this._maxWidth) {
                     max = option;
                 }
             }
@@ -113,7 +305,9 @@ Window_Dropdown.prototype.makeCommandList = function() {
         this.addCommand(max, max);
     } else {
         this._options.setHandler('cancel', this.revertUnfocus.bind(this));
-        if (this._dropIndex == -1 || this._dropIndex >= this._options._list.length) {
+        if (this._options._list.length === 0) {
+          //nothing
+        } else if (this._dropIndex == -1 || this._dropIndex >= this._options._list.length) {
             this.addCommand("", "none");
             this.setHandler("none", this.openChoose.bind(this));
         } else {
@@ -125,10 +319,6 @@ Window_Dropdown.prototype.makeCommandList = function() {
 
 };
 
-Window_Command.prototype.windowWidth = function() {
-    return 240;
-};
-
 Window_Dropdown.prototype.processTouch = function() {
     Window_Selectable.prototype.processTouch.call(this);
     if (TouchInput.isTriggered() && !this._options.isTouchedInsideFrame()) {
@@ -136,23 +326,39 @@ Window_Dropdown.prototype.processTouch = function() {
             this.revertUnfocus();
         }
     }
-}
+};
 
 Window_Dropdown.prototype.getResult = function() {
-    if (this._dropIndex == -1 || this._dropIndex >= this._options._list.length) {
+    if (this._dropIndex == -1 || this._dropIndex >= this._options._list.length ||  0 == this._options._list.length) {
         return null;
     } else {
         return this._options._list[this._dropIndex];
     }
 };
 
+Window_Dropdown.prototype.unChoose = function() {
+  if (this._selecting) this.revertUnfocus();
+  this._dropIndex = -1;
+  this.refresh();
+}
+
 Window_Dropdown.prototype.openChoose = function() {
+    if (this._options._list.length <= 1) { this.activate(); return; }
+    this._options.show();
     this._options.open();
     this._options.activate();
     this._options._index = (this._dropIndex == -1) ? 0 : this._dropIndex;
     this._selecting = true;
     this.deactivate();
 };
+
+Window_Dropdown.isTouchedInsideFrame = function() {
+    if (this._selecting) {
+      return this._options.isTouchedInsideFrame();
+    } else {
+      return Window_Selectable.prototype.isTouchedInsideFrame.call(this);
+    }
+}
 
 Window_Dropdown.prototype.chooseUnfocus = function() {
     this._selecting = false;
@@ -167,6 +373,7 @@ Window_Dropdown.prototype.revertUnfocus = function() {
     this._selecting = false;
     this._options.close();
     this._options.deactivate();
+    this._options.select(this._dropIndex.clamp(0, (this._options._list.length-1)));
     this.activate();
     //do not change this._dropIndex
 };
@@ -192,7 +399,7 @@ function Window_Textbox() {
 Window_Textbox.prototype = Object.create(Window_Base.prototype);
 Window_Textbox.prototype.constructor = Window_Textbox;
 
-Window_Textbox.prototype.MARGINS = function() { return 20;};
+Window_Textbox.prototype.MARGINS = function() { return 18;};
 Window_Textbox.prototype.FONT = function() { return "GameFont"; };
 Window_Textbox.prototype.FSIZE = function() { return 16; };
 Window_Textbox.prototype.FCOLOR = function() { return '#ffffff'; };
@@ -221,7 +428,7 @@ Window_Textbox.prototype.initialize = function(specs) {
     if (specs["y"]) { this.y = specs['y'];} else { this.y=0; }
     if (specs["z"]) { this.z = specs['z'];} else { this.z = 10000; }
     //width and height of text box
-    if (specs["width"]) { this.x = specs['width'];} else {this.width=this.CHAT_WIDTH();}
+    if (specs["width"]) { this.width = specs['width'];} else {this.width=this.CHAT_WIDTH();}
     if (specs["height"]) { this.height = specs['height'];} else {this.height=this.CHAT_HEIGHT();} 
     //size of margins on either side
     if (specs["margins"]) { this.margins = specs['margins'];} else {this.margins =this.MARGINS();}
@@ -267,6 +474,7 @@ Window_Textbox.prototype.initialize = function(specs) {
     
     this.visible = true;
     this.active = false;
+    this._unlock = [];
     this.characterCache = {};
     this.scroll_index_x = 0;
     this.firstHighlightIndex = 0;
@@ -281,11 +489,26 @@ Window_Textbox.prototype.initialize = function(specs) {
     this.text.bitmap.fontSize = this.f_size;
     this.text.bitmap.fontFace = this.f_name;
     this.writeText();
-    //this.refresh();
 };
 
-Window_Textbox.prototype.setSubmitHandler = function(method) {
-  this._submitCallback = method;
+Window_Textbox.prototype.setHint = function(text, clear) {
+    clear = clear || false;
+    this.hint = text;
+    if (clear) this._message = "";
+    this.refresh();
+    if (clear) {
+      this.text.bitmap.clear();
+      this.writeText();
+    }
+};
+
+Window_Textbox.prototype.unlock = function(keyList) {
+  this._unlock = keyList;
+};
+
+Window_Textbox.prototype.setSubmitHandler = function(method, obj) {
+  obj = obj || this;
+  this._submitCallback = method.bind(obj);
 }
   
 Window_Textbox.prototype.moveto = function(x, y) {
@@ -293,6 +516,11 @@ Window_Textbox.prototype.moveto = function(x, y) {
   this.x = x; this.y = y; this.lastx = x; this.lasty = y;
   this.cursor.y = y;
   this.cursor.x += delx;
+};
+Window_Textbox.prototype.isTouchedInsideFrame = function() {
+    var x = this.canvasToLocalX(TouchInput.x);
+    var y = this.canvasToLocalY(TouchInput.y);
+    return x >= 0 && y >= 0 && x < this.width && y < this.height;
 };
   
 Window_Textbox.prototype.moveby = function(dx, dy) {
@@ -337,6 +565,23 @@ Window_Textbox.prototype.findAppropriateString = function() {
     return mes;
 };
   
+Window_Textbox.prototype.setType = function(type) {
+  switch(type) {
+    case 'string':
+    case 'number':
+    case 'object':
+    case 'boolean':
+      this.type = type;
+      this.refresh();
+    default:
+  }
+};
+
+Window_Textbox.prototype.setConstraint = function(method, message) {
+  this._validCheck = method;
+  this._specialErrText = message;
+};
+
 Window_Textbox.prototype.validEntryCheck = function() {
   this.validState = true;
   switch(this.type) {
@@ -348,16 +593,26 @@ Window_Textbox.prototype.validEntryCheck = function() {
       } catch (err) {
         break;
       }
-    case 'boolean': if (/^(\s)*(true|false)(\s)*$/i.exec(this._message)) return; else break;
+    case 'boolean': 
+      if (/^(\s)*(true|false)(\s)*$/i.exec(this._message)) ; 
+      else this.validState = false; break;
     default:
       this.type = 'string';
-      return;
   }
-  //set state to invalid and write error message
-  this.validState = false;
+  //check if fails due to additional constraints
+  var errtext = null;
+  if (this.validState && this._validCheck) {
+    if (this._validCheck.call(this, this._message));
+    else {
+      this.validState = false;
+      errtext = this._specialErrText;
+    }
+  }
+  //if not valid, write error message
+  if (this.validState) return;
   this.text.bitmap.fontFace = 'Verdana';
   this.text.bitmap.textColor = this.ERRCOLOR();
-  this.writeText(true);
+  this.writeText(true, errtext);
 };
 
 Window_Textbox.prototype.exitFocus = function() {
@@ -469,8 +724,9 @@ Window_Textbox.prototype.moveCursorToMouse = function() {
   this.cursor.x = length;
 };
  
-Window_Textbox.prototype.writeText = function(error) {
+Window_Textbox.prototype.writeText = function(error, errtext) {
   error = error || false;
+  errtext = errtext || ("Error: Invalid type. Expected: "+this.type);
   var string = this.findAppropriateString();
   if (string == "") {
     this.text.bitmap.textColor = this.HINTCOLOR();
@@ -479,25 +735,25 @@ Window_Textbox.prototype.writeText = function(error) {
   switch(this._err_dir) {
     case 'up':
       if (error) {
-        this.text.bitmap.drawTextNoOutline("Error: Invalid type. Expected: "+this.type, 0, this.height/2-10, this.width, 36);
+        this.text.bitmap.drawTextNoOutline(errtext, 0, this.height/2-10, this.width, 36);
       } else {
         this.text.bitmap.drawText(string, this.margins, this.height, this.width, 36);
       } break;
     case 'down':
       if (error) {
-        this.text.bitmap.drawTextNoOutline("Error: Invalid type. Expected: "+this.type, 0, this.height/2+10, this.width, 36);
+        this.text.bitmap.drawTextNoOutline(errtext, 0, this.height/2+10, this.width, 36);
       } else {
         this.text.bitmap.drawText(string, this.margins, 0, this.width, 36);
       } break;
     case 'left':
       if (error) {
-        this.text.bitmap.drawTextNoOutline("Error: Invalid type. Expected: "+this.type, 0, 0, this.width, 36);
+        this.text.bitmap.drawTextNoOutline(errtext, 0, 0, this.width, 36);
       } else {
         this.text.bitmap.drawText(string, this.margins+this.width, 0, this.width, 36);
       } break;
     case 'right':
       if (error) {
-        this.text.bitmap.drawTextNoOutline("Error: Invalid type. Expected: "+this.type, this.width, 0, this.width, 36);
+        this.text.bitmap.drawTextNoOutline(errtext, this.width, 0, this.width, 36);
       } else {
         this.text.bitmap.drawText(string, this.margins, 0, this.width, 36);
       } break;
@@ -516,8 +772,8 @@ Window_Textbox.prototype.update = function() {
     moveto(this.x, this.y)
   }
   //if not visible, cannot activate/click into it
-  if (TouchInput.isTriggered() || TouchInput.isPressed()) {
-    if ((TouchInput.x >= this.x) && (TouchInput.x <= (this.x+this.width)) && (TouchInput.y >= this.y) && (TouchInput.y <= (this.y+this.height))) {
+  if ((TouchInput.isTriggered() || TouchInput.isPressed()) && this.visible) {
+    if (this.isTouchedInsideFrame()) {
       this.active = true;
       this.cursor.visible = this.visible && this.isOpen();
 
@@ -628,7 +884,7 @@ Keyboard.sendMessage = function() {
     var box = this.text_boxes[i];
     if (box.active) {
       if (box._submitCallback)
-        (box._submitCallback)(this);
+        (box._submitCallback.call());
       box.exitFocus();
       break;
     }
@@ -734,7 +990,7 @@ Keyboard.tryDeleteAtCursor = function() {
     //delete highlighted text
     var left = Math.min(textbox.firstHighlightIndex, this._cursor_pos);
     var right = Math.max(textbox.firstHighlightIndex, this._cursor_pos);
-    console.log("delete: "+left+" "+right);
+
     this.message = this.message.slice(0, left)+((this.message.length == right) ? "" : this.message.slice(right));
     this._cursor_pos = left;
   } else {
@@ -944,7 +1200,7 @@ Input.update = function() {
 
 var eat_press = Input.isPressed;
 Input.isPressed = function(key) {
-  if (!Keyboard.active || this.keyboard_lock) {
+  if (!Keyboard.active || this.keyboard_lock || (Keyboard.window() && Keyboard.window()._unlock.indexOf(key) >= 0)) {
     return eat_press.call(this, key);
   }
   return false;
@@ -954,14 +1210,14 @@ Input.isTriggered = function(key) {
   if (key == KeyInput._keyMap['Mouse Left'] || ((Array.isArray(key)) && (key.indexOf(KeyInput._keyMap['Mouse Left']) >= 0))) {
     return eat_trigger.call(this, key);
   }
-  if (!Keyboard.active || this.keyboard_lock) {
+  if (!Keyboard.active || this.keyboard_lock || (Keyboard.window() && Keyboard.window()._unlock.indexOf(key) >= 0)) {
     return eat_trigger.call(this, key);
   }
   return false;
 };
 var eat_repeat = Input.isRepeated;
 Input.isRepeated = function(key) {
-  if (!Keyboard.active || this.keyboard_lock) {
+  if (!Keyboard.active || this.keyboard_lock || (Keyboard.window() && Keyboard.window()._unlock.indexOf(key) >= 0)) {
     return eat_repeat.call(this,key);
   }
   return false;
