@@ -40,6 +40,7 @@ var getAssets = function(outpath, ignore) {
 					case 'rpgmvp': //IMG Decrypt
 						var img = file.slice(0,-7); //remove ".rpgmvp"
 
+						if (fs.existsSync(path.join(outPath, (img+'.png')))) { update_progress(); break; }
 						var bitmap = ImageManager.loadBitmap(sourcePath+path_separator, img);
 						var data = [ bitmap, outPath, img ];
 						bitmap.addLoadListener(function() {
@@ -51,6 +52,7 @@ var getAssets = function(outpath, ignore) {
 					case 'rpgmvo': //OGG Decrypt
 						$collectingAudio++;
 						var ogg = file.slice(0,-7) //remove ".rpgmvo"
+						if (fs.existsSync(path.join(outPath, (ogg+'.ogg')))) { update_progress(); $collectingAudio--; break; }
 						var parent = (sourcePath.split(path.sep)).pop();
 						if (parent == 'bgm') AudioManager.playBgm({name: ogg});
 						else AudioManager.createBuffer(parent, ogg);
@@ -58,10 +60,12 @@ var getAssets = function(outpath, ignore) {
 					case 'rpgmvm': //M4A Decrypt
 						$collectingAudio++;
 						var ogg = file.slice(0,-7) //remove ".rpgmvm"
+						if (fs.existsSync(path.join(outPath, (ogg+'.m4a')))) { update_progress(); $collectingAudio--; break; }
 						var parent = (sourcePath.split(path.sep)).pop();
 						AudioManager.createBuffer(parent, ogg);
 						break;
 					default:
+						if (fs.existsSync(path.join(outPath, (ogg+'.m4a')))) { update_progress(); break;}
 						fs.writeFileSync(path.join(outPath, file), fs.readFileSync(path.join(sourcePath, file)));
 						update_progress();
 				} 
