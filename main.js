@@ -4,12 +4,15 @@
 
 var $collectingAudio = 0;
 var $outpath = "decrypted";
+//Works for default Windows
+var $path_separator = '\\';
 var $total_files = 0;
 var $files_copied = 0;
+var $max_depth = 40;
+var $active = 0;
+var $stack = [];
 
 var getAssets = function(outpath, ignore) {
-	//Works for default Windows
-	var path_separator = '\\';
 
 	var fs = require('fs');
 	var path = require('path');
@@ -20,59 +23,80 @@ var getAssets = function(outpath, ignore) {
 	if (!fs.existsSync(outpath))
 		fs.mkdirSync(outpath,  { recursive: true });
 
-	var visited = []
 	function decryptRecurse(sourcePath, outPath) {
+		
 		var dirs = fs.readdirSync(sourcePath);
-		for (dir in dirs) {
+		for (var dir = 0; dir < dirs.length; dir++) {
+			var file = dirs[dir];
 			//if new directory, make new output directory and recurse into it
-			if (fs.lstatSync(path.join(sourcePath, dirs[dir])).isDirectory()) {
-				if (ignore.indexOf(dirs[dir]) >= 0) continue;
-				if (!fs.existsSync(path.join(outPath, dirs[dir]))) {
-					fs.mkdirSync(path.join(outPath, dirs[dir]), { recursive: true });
+			if (fs.lstatSync(path.join(sourcePath, file)).isDirectory()) {
+				if (ignore.indexOf(file) >= 0) continue;
+				if (!fs.existsSync(path.join(outPath, file))) {
+					fs.mkdirSync(path.join(outPath, file), { recursive: true });
 				}
-				decryptRecurse(path.join(sourcePath, dirs[dir]), path.join(outPath, dirs[dir]));
+				decryptRecurse(path.join(sourcePath, file), path.join(outPath, file));
 			} else {
+				//Do not redo work
+				var decrypt_name = file.replace(/\.rpgmvp$/,'.png');
+				decrypt_name = decrypt_name.replace(/\.rpgmvo$/,'.ogg');
+				decrypt_name = decrypt_name.replace(/\.rpgmvm$/,'.m4a');
+				if (fs.existsSync(path.join(outPath, decrypt_name))) {
+					continue;
+				}
 				if (file == "Thumbs.db") continue;
 				$total_files++; //update total # of images seen
-				var file = dirs[dir];
-				var ext = file.split('.').pop();
-				switch (ext) {
-					case 'rpgmvp': //IMG Decrypt
-						var img = file.slice(0,-7); //remove ".rpgmvp"
-
-						if (fs.existsSync(path.join(outPath, (img+'.png')))) { update_progress(); break; }
-						var bitmap = ImageManager.loadBitmap(sourcePath+path_separator, img);
-						var data = [ bitmap, outPath, img ];
-						bitmap.addLoadListener(function() {
-							base64ToPNG(this[0].canvas.toDataURL(), this[1], this[2]);
-							//log progress
-							update_progress();
-						}.bind(data));
-						break;
-					case 'rpgmvo': //OGG Decrypt
-						$collectingAudio++;
-						var ogg = file.slice(0,-7) //remove ".rpgmvo"
-						if (fs.existsSync(path.join(outPath, (ogg+'.ogg')))) { update_progress(); $collectingAudio--; break; }
-						var parent = (sourcePath.split(path.sep)).pop();
-						if (parent == 'bgm') AudioManager.playBgm({name: ogg});
-						else AudioManager.createBuffer(parent, ogg);
-						break;
-					case 'rpgmvm': //M4A Decrypt
-						$collectingAudio++;
-						var ogg = file.slice(0,-7) //remove ".rpgmvm"
-						if (fs.existsSync(path.join(outPath, (ogg+'.m4a')))) { update_progress(); $collectingAudio--; break; }
-						var parent = (sourcePath.split(path.sep)).pop();
-						AudioManager.createBuffer(parent, ogg);
-						break;
-					default:
-						if (fs.existsSync(path.join(outPath, (ogg+'.m4a')))) { update_progress(); break;}
-						fs.writeFileSync(path.join(outPath, file), fs.readFileSync(path.join(sourcePath, file)));
-						update_progress();
-				} 
+				if ($active <= $max_depth) {
+					$active += 1;
+					dealWith(file, outPath, sourcePath);
+				} else {
+					$stack.push([file, outPath, sourcePath]);
+				}
 			}
 		}
 	}
 	decryptRecurse(filepath, outpath);
+}
+
+function dealWith(file, outPath, sourcePath) {
+	var fs = require('fs');
+	var path = require('path');
+
+	var ext = file.split('.').pop();
+	switch (ext) {
+		case 'rpgmvp': //IMG Decrypt
+			var img = file.slice(0,-7); //remove ".rpgmvp"
+			var bitmap = ImageManager.loadBitmap(sourcePath+$path_separator, img);
+			var data = [ bitmap, outPath, img ];
+			bitmap.addLoadListener(function() {
+				base64ToPNG(this[0].canvas.toDataURL(), this[1], this[2]);
+			}.bind(data));
+			break;
+		case 'rpgmvo': //OGG Decrypt
+			$collectingAudio++;
+			var ogg = file.slice(0,-7) //remove ".rpgmvo"
+			var parent = (sourcePath.split(path.sep)).pop();
+			if (parent == 'bgm') AudioManager.playBgm({name: ogg});
+			else AudioManager.createBuffer(parent, ogg);
+			break;
+		case 'rpgmvm': //M4A Decrypt
+			$collectingAudio++;
+			var ogg = file.slice(0,-7) //remove ".rpgmvm"
+			var parent = (sourcePath.split(path.sep)).pop();
+			AudioManager.createBuffer(parent, ogg);
+			break;
+		default:
+			fs.writeFileSync(path.join(outPath, file), fs.readFileSync(path.join(sourcePath, file)));
+			update_progress();
+	}
+}
+
+function tryNext() {
+	$active -= 1;
+	if ($stack.length > 0) {
+		let vars = $stack.pop();
+		$active += 1;
+		dealWith(vars[0], vars[1], vars[2]);
+	}
 }
 
 var onxhrload = WebAudio.prototype._onXhrLoad;
@@ -105,6 +129,7 @@ function base64ToPNG(data, outpath, filename) {
   data = data.replace(/^data:image\/png;base64,/, '');
 
   fs.writeFileSync(path.join(outpath, filename+".png"), data, 'base64');
+  update_progress();
 }
 //ogg, credit to: https://stackoverflow.com/questions/48291593/convert-base64-audio-to-file
 function base64ToOGG(array, outpath, filename, ftype) {
@@ -127,6 +152,7 @@ function update_progress() {
 	var fs = require('fs');
 	$files_copied++;
 	fs.writeFileSync("progress.txt", $files_copied.toString()+ " / "+ $total_files.toString());
+	tryNext();
 }
 
 PluginManager.setup($plugins);
