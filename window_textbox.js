@@ -25,13 +25,15 @@ Window_Base.prototype.drawWrapText = function(text, indent, align, size) {
     var x = base; var y = -10;
     var indented = false;
     var words = lines[k].split(/\s/);
+    const margins = 20; //TODO change?
+    const width = this.width - 2*margins;
     
     var i = 0;
     while (i < words.length) {
       var word = words[i];
       var ww = this.textWidth(word);
-      if (x+((x==base)?0:space)+ww < this.width) {
-        this.drawText(((x==base)?"":" ")+word, x, y, this.width, align);
+      if (x+((x==base)?0:space)+ww < width) {
+        this.drawText(((x==base)?"":" ")+word, x, y, width, align);
         x += ((x==base)?0:space)+ww;//draw this word
         i = i+1;
       } else if (x != base) {
@@ -43,8 +45,8 @@ Window_Base.prototype.drawWrapText = function(text, indent, align, size) {
         var j = 0;
         while (j < word.length) {
           var l = this.textWidth(word[j]);
-          if (x+l < this.width) {
-            this.drawText(word[j], x, y, this.width, align);
+          if (x+l < width) {
+            this.drawText(word[j], x, y, width, align);
             j = j+1; x+=l;//draw this word
           } else if (x != base) {
             if (!indented) {indented = true; base+=indent;}
@@ -64,20 +66,29 @@ Window_Base.prototype.drawWrapText = function(text, indent, align, size) {
 // Window_Checkbox
 //
 // The window for a binary choice selection
+
+function Window_Checkbox() {
+    this.initialize.apply(this, arguments);
+}
+
 Window_Checkbox.prototype = Object.create(Window_Base.prototype);
 Window_Checkbox.prototype.constructor = Window_Base;
+
+Window_Checkbox.prototype.LINE_HEIGHT = function() { return 36; };
 
 Window_Checkbox.prototype.initialize = function(x, y, side, specs) {
     specs = specs || {};
     this._text = specs['text'] || ""; //text to display near the checkbox
-    this.margins = specs['gap'] || 40; //distance between checkbox and start of text
+    this.margins = specs['gap'] || 10; //distance between checkbox and start of text
     this._direction = specs['direction'] || 'left'; //direction (from checkbox) to display text
     this._dir = specs['dir'] || specs['directory'] || 'img/system/'; //directory to look for image
     this._image = specs['image'] || null; //image to use for the checkmark
     this._boxSize = specs['size'] || side * 0.9; //if no image, side length of interior box/fill
-    this._color = specs['color'] || 'ffffff';
-    this._fontColor = specs['font_color'] || 'ffffff';
+    this._color = specs['color'] || '#ffffff';
+    this._fontColor = specs['font_color'] || '#ffffff';
+    this._disableColor = specs['disable_color'] || '#ffffff';
     Window_Base.prototype.initialize.call(this, x, y, side, side);
+    //this._createCursorSprite(); - called in createTextSprite
     this._createFillSprite();
     this._createTextSprite();
 
@@ -102,9 +113,15 @@ Window_Checkbox.prototype._createFillSprite = function() {
 
 Window_Checkbox.prototype.setColor = function(color) {
     this._color = color;
-    if (this._image != null) {
+    if (this._image == null) {
         this._fill.bitmap.fillRect((this.width - this._boxSize)/2, (this.height - this._boxSize)/2, this._boxSize, this._boxSize, this._color);
     }
+}
+
+Window_Checkbox.prototype.isTouchedInsideFrame = function() {
+    var x = this.canvasToLocalX(TouchInput.x);
+    var y = this.canvasToLocalY(TouchInput.y);
+    return x >= 0 && y >= 0 && x < this.width && y < this.height;
 }
 
 Window_Checkbox.prototype._createTextSprite = function() {
@@ -115,20 +132,22 @@ Window_Checkbox.prototype._createTextSprite = function() {
         let gr_width = (w > this.width) ? w : this.width;
         let gr_height = (h > this.height) ? h : this.height;
         this.text.bitmap = new Bitmap(w, h);
-        switch(this._err_dir) {
+        switch(this._direction) {
           case 'up':
-            this.text.x = (this.width - w)/2; this.text.y = (this.height - (h+this.margins)); break;
-            setCursorRect(-this.margins,-this.margins - h, gr_width + 2*this.margins, this.height + h + 2*this.margins);
+            this.text.x = (this.width - w)/2; this.text.y = -(h + this.margins);
+            this.createCursorRect(-this.margins+this.text.x,-this.margins - h, gr_width + 2*this.margins, this.height + h + 2*this.margins);
+            break;
           case 'down':
-            this.text.x = (this.width - w)/2; this.text.y = (this.height + this.margins); break;
-            setCursorRect(-this.margins,-this.margins, gr_width + 2*this.margins, this.height + h + 2*this.margins);
+            this.text.x = (this.width - w)/2; this.text.y = (this.height + this.margins);
+            this.createCursorRect(-this.margins+this.text.x,-this.margins, gr_width + 2*this.margins, this.height + h + 2*this.margins);
+            break;
           case 'left':
             this.text.x = -(this.margins + w); this.text.y = (this.height - h)/2;
-            setCursorRect(-this.margins - w,-this.margins,this.width + w + 2*this.margins, gr_height+2*this.margins);
+            this.createCursorRect(-this.margins - w,this.text.y - this.margins,this.width + w + 2*this.margins, gr_height+2*this.margins);
             break;
           case 'right':
             this.text.x = (this.width + this.margins); this.text.y = (this.height - h)/2;
-            setCursorRect(-this.margins,-this.margins,this.width + w + 2*this.margins, gr_height+2*this.margins);
+            this.createCursorRect(-this.margins,this.text.y - this.margins,this.width + w + 2*this.margins, gr_height+2*this.margins);
             break;
         }
         this.text.bitmap.drawText(0,0,this.text.bitmap.width, this.text.bitmap.height);
@@ -136,8 +155,18 @@ Window_Checkbox.prototype._createTextSprite = function() {
         this.text.visible = false;
         this.addChild(this.text);
     } else {
-        setCursorRect(-this.margins,-this.margins,this.width +2*this.margins, this.height+2*this.margins);
+        this.createCursorRect(-this.margins,-this.margins,this.width +2*this.margins, this.height+2*this.margins);
     }
+}
+
+Window_Checkbox.prototype.createCursorRect = function(x, y, width, height) {
+  this._cursor = new Sprite;
+  this._cursor.bitmap = new Bitmap(width, height);
+  this._cursor.x = x;
+  this._cursor.y = y;
+  this._cursor.bitmap.fillRect(0,0,width,height,'#ffffff');
+  this._cursor.opacity = 80;
+  this.addChild(this._cursor);
 }
 
 Window_Checkbox.prototype.update = function() {
@@ -148,11 +177,11 @@ Window_Checkbox.prototype.update = function() {
             this._enabled = !this._enabled;
         }
     }
-    this._windowCursorSprite.visible = this.active && this.visible;
+    this._cursor.visible = this.active && this.visible;
     this._fill.visible = this.visible && this._enabled;
 }
 
-Window_Checkbox.prototype.drawText = function() {
+Window_Checkbox.prototype._drawText = function() {
   if (this._text == "" || !this.text) {
     return;
   }
@@ -160,17 +189,32 @@ Window_Checkbox.prototype.drawText = function() {
   this.text.visible = true;
 }
 
-Window_Checkbox.prototype.set(val=true) {
-    this._enabled = true;
+Window_Checkbox.prototype.set = function(val=true) {
+    this._enabled = val;
 }
-Window_Checkbox.prototype.get() {
+Window_Checkbox.prototype.get = function() {
     return this._enabled;
 }
 
+Object.defineProperty(Window_Checkbox.prototype, 'opacity', {
+    get: function() {
+        return this._windowSpriteContainer.alpha * 255;
+    },
+    set: function(value) {
+        this._windowSpriteContainer.alpha = value.clamp(0, 255) / 255;
+        this._cursor.opacity = value;
+        this._fill.opacity = value;
+        this.text.opacity = value;
+    },
+    configurable: true
+});
+
 Window_Checkbox.prototype.activate = function() {
+    this.setColor(this._color);
     this.active = true;
 }
 Window_Checkbox.prototype.deactivate = function() {
+    this.setColor(this._disableColor);
     this.active = false;
 }
 Window_Checkbox.prototype.show = function() {
@@ -562,8 +606,8 @@ Window_Textbox.prototype.MARGINS = function() { return 18;};
 Window_Textbox.prototype.FONT = function() { return "GameFont"; };
 Window_Textbox.prototype.FSIZE = function() { return 16; };
 Window_Textbox.prototype.FCOLOR = function() { return '#ffffff'; };
-Window_Textbox.prototype.ERRCOLOR = function() { return '#dd0000'; };
-Window_Textbox.prototype.HINTCOLOR = function() { return '#cccccc'; };
+Window_Textbox.prototype.ERR_COLOR = function() { return '#dd0000'; };
+Window_Textbox.prototype.HINT_COLOR = function() { return '#cccccc'; };
 Window_Textbox.prototype.HIGHLIGHT_COLOR = function() { return '#ccccdd80'; };
 Window_Textbox.prototype.CHAT_WIDTH = function() { return 240; };
 Window_Textbox.prototype.CHAT_HEIGHT = function() { return 40; };
@@ -589,16 +633,26 @@ Window_Textbox.prototype.initialize = function(specs) {
     //width and height of text box
     if (specs["width"]) { this.width = specs['width'];} else {this.width=this.CHAT_WIDTH();}
     if (specs["height"]) { this.height = specs['height'];} else {this.height=this.CHAT_HEIGHT();} 
-    //size of margins on either side
+    //size of margins on either side, between edges of textbox and text within
     if (specs["margins"]) { this.margins = specs['margins'];} else {this.margins =this.MARGINS();}
     //font type, size, and color
     if (specs["font_size"]) { this.f_size = specs['font_size'];} else {this.f_size=this.FSIZE();}
     if (specs["font"]) { this.f_name = specs['font'];} else {this.f_name=this.FONT();}
     if (specs["font_color"]) { this.f_color = specs['font_color'];} else {this.f_color=this.FCOLOR();}
+    if (specs["highlight_color"]) { this._highlightColor = specs['highlight_color']; } else { this._highlightColor = this.HIGHLIGHT_COLOR(); }
+    if (specs["hint_color"]) { this._hintColor = specs['hint_color']; } else { this._hintColor = this.HINT_COLOR(); }
+    if (specs["error_color"]) { this._errColor = specs['error_color']; } else { this._errColor = this.ERR_COLOR(); }
     //restrictions on expected type to be input
     if (specs["type"]) {this.type = specs['type'];} else {this.type = 'string';}
     //which side of the text box type-related errors should be displayed; "up" means above the textbox, etc
     if (specs["err_dir"] && (['up', 'down', 'left', 'right'].indexOf(specs["err_dir"]) >= 0)) { this._err_dir = specs['err_dir']; } else { this._err_dir = 'down'; }
+    //if there is a caption string to write beside the textbox
+    if (specs["caption"]) {this._captionText = specs['caption'];} else {this._captionText = "";}
+    if (specs["caption_size"]) { this.cap_f_size = specs['caption_size'];} else {this.cap_f_size=this.FSIZE();}
+    if (specs["caption_font"]) { this.cap_f_name = specs['caption_font'];} else {this.cap_f_name=this.FONT();}
+    if (specs["caption_color"]) { this.cap_f_color = specs['caption_color'];} else {this.cap_f_color=this.FCOLOR();}
+    //the direction to write such a label
+    if (specs["caption_dir"] && (['up', 'down', 'left', 'right'].indexOf(specs["caption_dir"]) >= 0)) { this._caption_dir = specs['caption_dir']; } else { this._caption_dir = 'up'; }
     //hint text
     if (specs["hint"]) {this.hint = specs['hint'];} else {this.hint = "";}
     //reset to last valid entry (or empty) if exit focus and the message is found to be invalid
@@ -628,6 +682,10 @@ Window_Textbox.prototype.initialize = function(specs) {
     }
     this.text.visible = true;
     this.cursor.visible = false;
+    this.cap = new Sprite();
+    //placeholder used to generate size of caption from font type/size
+    this.cap.bitmap = new Bitmap(0,0);
+    this._setCaptionSprite();
     this.addChild(this.text);
     this.addChild(this.cursor);
     
@@ -655,12 +713,11 @@ Window_Textbox.prototype.initialize = function(specs) {
 Window_Textbox.prototype.setHint = function(text, clear) {
     clear = clear || false;
     this.hint = text;
-    if (clear) this._message = "";
-    this.refresh();
     if (clear) {
+      this._message = "";
       this.text.bitmap.clear();
-      this.writeText();
     }
+    this.writeText();
 };
 
 Window_Textbox.prototype.unlock = function(keyList) {
@@ -706,10 +763,10 @@ Window_Textbox.prototype.needsShift = function() {
 };
   
 Window_Textbox.prototype.findAppropriateString = function() {
-    var mes = "";
-    var i = this.scroll_index_x;
-    var length = this.margins;
-    var message = Keyboard.message;
+    let mes = "";
+    let i = this.scroll_index_x;
+    let length = this.margins;
+    let message = (this.active) ? Keyboard.message : this.getMessage();
     while (true) {
       //stop if we hit end of message, or end of text box
       if ((i == message.length) || ((length + this.charWidth(message[i])) > (this.width-this.margins))) {//((i == message.length) || ((length + this.text_widths[i]) >= (this.width-this.margins))) {
@@ -780,10 +837,10 @@ Window_Textbox.prototype.validEntryCheck = function() {
     return;
   }
   this.text.bitmap.fontFace = 'Verdana';
-  this.text.bitmap.textColor = this.ERRCOLOR();
+  this.text.bitmap.textColor = this._errColor;
   if (this.resetOnError) {
     this._message = this._last;
-    refresh();
+    this.refresh();
   }
   this.writeText(true, errtext);
 };
@@ -856,12 +913,12 @@ Window_Textbox.prototype.drawHighlight = function() {
   right = this.sumWidths(this.scroll_index_x, right)+this.margins;
   left = Math.min(left, this.width - this.margins);
   right = Math.min(right, this.width - this.margins);
-  this.text.bitmap.fillRect(left, 0,(right - left), this.LINE_HEIGHT(), this.HIGHLIGHT_COLOR() );
+  this.text.bitmap.fillRect(left, 0,(right - left), this.LINE_HEIGHT(), this._highlightColor);
 };
 
 Window_Textbox.prototype.moveCursorToMouse = function() {
   var i = 0; var length = this.x+this.margins-this.sumWidths(0,this.scroll_index_x);
-  var message = Keyboard.message;
+  var message = this.active ? Keyboard.message : this.getMessage();
   while (true) {
     //stop if we hit end of message, or end of text box
     if (i == message.length) {
@@ -896,13 +953,54 @@ Window_Textbox.prototype.moveCursorToMouse = function() {
   }
   this.cursor.x = length;
 };
+
+Window_Textbox.prototype._setCaptionSprite = function() {
+    if (this._captionText != "") {
+        const margins = 0;
+        this._setCaptionFontParams();
+        let w = this.cap.bitmap.measureTextWidth(this._captionText);
+        let h = this.LINE_HEIGHT();
+        this.cap.bitmap = new Bitmap(w, h);
+        switch(this._caption_dir) {
+          case 'up':
+            this.cap.x = (this.width - w)/2; this.cap.y = -(h + margins);
+            break;
+          case 'down':
+            this.cap.x = (this.width - w)/2; this.cap.y = (this.height + margins);
+            break;
+          case 'left':
+            this.cap.x = -(margins + w); this.cap.y = (this.height - h)/2;
+            break;
+          case 'right':
+            this.cap.x = (this.width + margins); this.cap.y = (this.height - h)/2;
+            break;
+        }
+        this.writeCaption();
+        this.cap.visible = false;
+        this.addChild(this.cap);
+    }
+}
+
+Window_Textbox.prototype._setCaptionFontParams = function() {
+    this.cap.bitmap.fontSize = this.cap_f_size;
+    this.cap.bitmap.fontFace = this.cap_f_name;
+    this.cap.bitmap.textColor = this.cap_f_color;
+}
+
+Window_Textbox.prototype.writeCaption = function() {
+  this.cap.bitmap.clear();
+  if (this._captionText && this._captionText != "") {
+    this._setCaptionFontParams();
+    this.cap.bitmap.drawText(this._captionText,0,0,this.cap.bitmap.width, this.cap.bitmap.height);
+  }
+}
  
 Window_Textbox.prototype.writeText = function(error, errtext) {
   error = error || false;
   errtext = errtext || ("Error: Invalid type. Expected: "+this.type);
   var string = this.findAppropriateString();
   if (string == "") {
-    this.text.bitmap.textColor = this.HINTCOLOR();
+    this.text.bitmap.textColor = this._hintColor;
     string = this.hint;
   }
   switch(this._err_dir) {
@@ -933,6 +1031,48 @@ Window_Textbox.prototype.writeText = function(error, errtext) {
   }
 }
 
+Window_Textbox.prototype.setCaptionText = function(value) {
+  this._captionText = value;
+  this._setCaptionSprite();
+  this.writeCaption();
+}
+Window_Textbox.prototype.setCaptionColor = function(value) {
+  this.cap_f_color = value;
+  this.writeCaption();
+}
+Window_Textbox.prototype.setCaptionName = function(value) {
+  this.cap_f_name = value;
+  this.writeCaption();
+}
+Window_Textbox.prototype.setCaptionSize = function(value) {
+  this.cap_f_size = value;
+  this.writeCaption();
+}
+Window_Textbox.prototype.setFontColor = function(value) {
+  this.f_color = value;
+  this.writeText();
+}
+Window_Textbox.prototype.setFontName = function(value) {
+  this.f_name = value;
+  this.writeText();
+}
+Window_Textbox.prototype.setFontSize = function(value) {
+  this.f_size = value;
+  this.writeText();
+}
+Window_Textbox.prototype.setHighlightColor = function(value) {
+  this._highlightColor = value;
+  this.writeText();
+}
+Window_Textbox.prototype.setHintColor = function(value) {
+  this._hintColor = value;
+  this.writeText();
+}
+Window_Textbox.prototype.setErrorColor = function(value) {
+  this._errColor = value;
+  this.writeText();
+}
+
 Window_Textbox.prototype.close = function() {
   Window_Base.prototype.close.call(this);
   //this.exitFocus(); //Should this assume/do this?
@@ -951,6 +1091,8 @@ Window_Textbox.prototype.hide = function() {
 
 Window_Textbox.prototype.activate = function() {
   Window_Base.prototype.activate.call(this);
+  Keyboard.message = this._message;
+  Keyboard._cursor_pos = this.restore_cursor;
   this.active = true;
 }
 
@@ -958,6 +1100,18 @@ Window_Textbox.prototype.deactivate = function() {
   Window_Base.prototype.deactivate.call(this);
   this.exitFocus();
 }
+
+Object.defineProperty(Window_Textbox.prototype, 'opacity', {
+    get: function() {
+        return this._windowSpriteContainer.alpha * 255;
+    },
+    set: function(value) {
+        this._windowSpriteContainer.alpha = value.clamp(0, 255) / 255;
+        this.cap.opacity = value;
+        this.text.opacity = value;
+    },
+    configurable: true
+});
 
 Window_Textbox.prototype.update = function() {
   Window_Base.prototype.update.call(this);
@@ -993,6 +1147,7 @@ Window_Textbox.prototype.update = function() {
   }
   if (!this.active) this.cursor.visible = false;
   this.text.visible = this.visible && this.isOpen();
+  this.cap.visible = this.visible && this.isOpen();
 };
 
 //-----------------------------------------------------------------------------
@@ -1467,6 +1622,7 @@ Input.buttonMapInput = function(method, keyname) {
         case 'pageup': check = ['Page Up', 'Q', 'q']; break;
         case 'pagedown': check = ['Page Down', 'W', 'w']; break;
         case 'debug': check = ['F9']; break;
+        default: break;
     }
     for (var i = 0; i < check.length; i++) {
         result = result || method.call(this, check[i]);
