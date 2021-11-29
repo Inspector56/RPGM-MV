@@ -210,7 +210,7 @@ const child_process = require('child_process');
 
 ModManager._path                = path.join(path.dirname(path.dirname(process.mainModule.filename)), 'mods');
 ModManager._base                = path.join(ModManager._path, 'base');
-ModManager._dependencies        = ["mv_mm.js", "window_textbox.js"];
+ModManager._dependencies        = ["mv_mm.js", "window_textbox.js", 'jsondiff.exe'];
 ModManager._listFileName        = "LIST.txt";
 ModManager._baseGameText        = "|Base Game|";
 ModManager._tempFolder          = "temp";
@@ -2554,9 +2554,13 @@ Window_ModPatchCreate.prototype.initialize = function(x, y) {
     Window_Base.prototype.initialize.call(this, x, y, Graphics.boxWidth - x, Graphics.boxHeight - y);
     this._listIndex = 0;
     this._menuState = [];
+  	this._toggleSelectedColor = '#ffce1f';
+  	this._toggleSelectableColor = '#ffffff';
+  	this._toggleDisabledColor = '#888888';
     AutoDiff.initializeExecArgs();
 
     this.createWindows();
+    //setState calls refreshToggles
     this.setState('toggle3');
 };
 Window_ModPatchCreate.prototype.createWindows = function() {
@@ -2568,7 +2572,6 @@ Window_ModPatchCreate.prototype.createWindows = function() {
     this.createToggle2Window();
     //checkbox for "check only listed files"
     this.createToggle3Window();
-    this.refreshToggles();
     //box with description text for each button
     this.createHelpWindow();
     //button to start patch creation
@@ -2595,31 +2598,57 @@ Window_ModPatchCreate.prototype.createWindows = function() {
 Window_ModPatchCreate.prototype.update = function() {
     var okTrigger = Input.isTriggered('ok');
     var touchTrigger = TouchInput.isTriggered();
-    if (okTrigger) {console.log("YELL")}
     Window_Base.prototype.update.call(this);
     if (!this.active) return; //TODO: if in progress, wait
 
     if (Input.isTriggered('cancel') || Input.isTriggered('Escape')) {
+    	if (this._state != 'submit') {
         this._cancelHander.call();
+    	}
     }
 
+    //Conditions for setting a certain button/input as active when the user clicks that region
     if (touchTrigger) {
         var state = null;
+        if (this._eqToggleWindow.isTouchedInsideFrame()) {
+        	state = 'eqOn';
+        }
+        if (this._eqToggleWindow.get()) {
+        	if (this._eqMinSizeWindow.isTouchedInsideFrame()) {
+        		state = 'eqMinSize';
+        	} else if (this._eqMinRatioWindow.isTouchedInsideFrame()) {
+        		state = 'eqMinRatio';
+        	}
+        }
+        if (this._timeoutOnWindow.isTouchedInsideFrame()) {
+        	state = 'timeoutOn';
+        }
+        if (this._timeoutOnWindow.get()) {
+        	if (this._timeoutInputWindow.isTouchedInsideFrame()) {
+        		state = 'timeoutInput';
+        	}
+        }
+
         if (this._inputText.isTouchedInsideFrame()) {
             state = 'input';
-        } else if (this._toggle1Window.isTouchedInsideFrame()) {
+        } else if (this._maxProcessesWindow.isTouchedInsideFrame()) {
+        		state = 'maxProcesses';
+        } else if (this._toggle1Window.isTouchedInsideFrame() && (!this._toggle3Window.get())) {
             state = 'toggle1';
-        } else if (this._toggle2Window.isTouchedInsideFrame()) {
+        } else if (this._toggle2Window.isTouchedInsideFrame() && (!this._toggle3Window.get())) {
             state = 'toggle2';
         } else if (this._toggle3Window.isTouchedInsideFrame()) {
             state = 'toggle3';
         } else if (this._saveButton.isTouchedInsideFrame()) {
-            if (this.state == 'submit') {
+            if (this._state == 'submit') {
                 this.doExportFinal();
             }
             state = 'submit';
         }
 
+        //If we click on a toggle that is already active - state == this._state - then we want to
+        // refreshToggles, as a key toggle may have changed. But, setState already calls refreshToggles
+        // no matter what, so no need to do anything special to accomodate.
         this.setState(state);
     } else {
         var state = null;
@@ -2636,23 +2665,31 @@ Window_ModPatchCreate.prototype.update = function() {
                 //state = 'submit';
             } else if (Input.isTriggered('up')) {
                 SoundManager.playCursor();
-                //If "use explicit list" (toggle3) is On (0), toggles 1 and 2 are disabled, so skip them
-                state = this._toggle3Window.index() ? 'toggle1' : 'toggle3';
+                //If "use explicit list" (toggle3) is On (true), toggles 1 and 2 are disabled, so skip them
+                state = this._toggle3Window.get() ? 'toggle3' : 'toggle1';
             } else if (Input.isTriggered('down')) {
                 SoundManager.playCursor();
                 state = 'toggle3';
             }
         } else if (this._state == 'toggle1') {
-            if (Input.isTriggered('left')) {
-                if (this._toggle1Window.index() == 1) {
-                    this._toggle1Window.select(0);
+        	  //Go to equivalent section of EQ column
+            if (Input.isTriggered('right')) {
+                SoundManager.playCursor();
+                if (this._eqToggleWindow.get()) {
+                	state = 'eqMinSize';
+                } else {
+                	state = 'eqOn';
                 }
-            } else if (Input.isTriggered('right')) {
-                if (this._toggle1Window.index() == 0) {
-                    this._toggle1Window.select(1);
+            //Go to equivalent section of Timeout column
+            } else if (Input.isTriggered('left')) {
+                SoundManager.playCursor();
+                if (this._timeoutOnWindow.get()) {
+                	state = 'timeoutInput';
+                } else {
+                	state = 'timeoutOn';
                 }
             } else if (okTrigger) {
-                this._toggle1Window.select((this._toggle1Window.index() == 0) ? 1 : 0);
+                this.refreshToggles();
             } else if (Input.isTriggered('down')) {
                 SoundManager.playCursor();
                 state = 'toggle2';
@@ -2661,42 +2698,194 @@ Window_ModPatchCreate.prototype.update = function() {
                 state = 'toggle3';
             }
         } else if (this._state == 'toggle2') {
-            if (Input.isTriggered('left')) {
-                if (this._toggle2Window.index() == 1) {
-                    this._toggle2Window.select(0);
+            if (Input.isTriggered('right')) {
+                if (this._eqToggleWindow.get()) {
+                	state = 'eqMinRatio';
+                } else {
+                	state = 'eqOn';
                 }
-            } else if (Input.isTriggered('right')) {
-                if (this._toggle2Window.index() == 0) {
-                    this._toggle2Window.select(1);
+            } else if (Input.isTriggered('left')) {
+                SoundManager.playCursor();
+                if (this._timeoutOnWindow.get()) {
+                	state = 'maxProcesses';
+                } else {
+                	state = 'timeoutOn';
                 }
             } else if (okTrigger) {
-                this._toggle2Window.select((this._toggle2Window.index() == 0) ? 1 : 0);
+                this.refreshToggles();
             } else if (Input.isTriggered('down')) {
                 SoundManager.playCursor();
+                /* Changed my mind about vertical cycling
                 state = 'input';
+                */
             } else if (Input.isTriggered('up')) {
                 SoundManager.playCursor();
                 state = 'toggle1';
             }
         } else if (this._state == 'toggle3') {
-            if (Input.isTriggered('left')) {
-                if (this._toggle3Window.index() == 1) {
-                    this._toggle3Window.select(0);
-                }
-            } else if (Input.isTriggered('right')) {
-                if (this._toggle3Window.index() == 0) {
-                    this._toggle3Window.select(1);
-                }
+            if (Input.isTriggered('right')) {
+                SoundManager.playCursor();
+                state = 'eqOn';
+            } else if (Input.isTriggered('left')) {
+                SoundManager.playCursor();
+                state = 'timeoutOn';
             } else if (okTrigger) {
-                this._toggle3Window.select((this._toggle3Window.index() == 0) ? 1 : 0);
+                this.refreshToggles();
             } else if (Input.isTriggered('up')) {
                 SoundManager.playCursor();
                 state = 'input';
             } else if (Input.isTriggered('down')) {
                 SoundManager.playCursor();
-                //If "use explicit list" (toggle3) is On (0), toggles 1 and 2 are disabled, so skip them
-                state = this._toggle3Window.index() ? 'toggle1' : 'input';
+                //If "use explicit list" (toggle3) is On (true), toggles 1 and 2 are disabled, so skip them
+                // state = this._toggle3Window.get() ? 'input' : 'toggle1'; Changed my mind about vertical cycling
+                if (!this._toggle3Window.get()) { state = 'toggle1' }
             }
+        } else if (this._state == 'eqOn') {
+        	if (Input.isTriggered('right')) {
+        		SoundManager.playCursor();
+       			state = 'timeoutOn';
+        	} else if (Input.isTriggered('left')) {
+        		SoundManager.playCursor();
+            state = 'toggle3';
+          } else if (okTrigger) {
+            this.refreshToggles();
+          } else if (Input.isTriggered('up')) {
+            SoundManager.playCursor();
+            state = 'input';
+          } else if (Input.isTriggered('down')) {
+            SoundManager.playCursor();
+            if (this._eqToggleWindow.get()) {
+       				state = 'eqMinSize';
+            } else {
+            	/* Changed my mind about vertical cycling in other columns
+            	state = 'input';
+            	*/
+            }
+          }
+        } else if (this._state == 'eqMinSize') {
+        	if (Input.isTriggered('right')) {
+        		SoundManager.playCursor();
+        		if (this._timeoutOnWindow.get()) {
+        			state = 'timeoutInput';
+        		} else {
+        			state = 'timeoutOn';
+        		}
+        	} else if (Input.isTriggered('left')) {
+        		SoundManager.playCursor();
+            if (this._toggle3Window.get()) {
+       				state = 'toggle3';
+            } else {
+            	state = 'toggle1';
+            }
+          } else if (okTrigger) {
+              state = 'eqMinSize'; //submit will try to exitFocus - restore focus, stay on this state.
+          } else if (Input.isTriggered('up')) {
+              SoundManager.playCursor();
+              state = 'eqOn';
+          } else if (Input.isTriggered('down')) {
+              SoundManager.playCursor();
+              //If we are here, eqOn must be true
+              state = 'eqMinRatio';
+          }
+        } else if (this._state == 'eqMinRatio') {
+        	if (Input.isTriggered('right')) {
+        		SoundManager.playCursor();
+        		state = 'maxProcesses'; //aligned with this, so timeoutOn doesn't matter
+        	} else if (Input.isTriggered('left')) {
+        		SoundManager.playCursor();
+            if (this._toggle3Window.get()) {
+       				state = 'toggle3';
+            } else {
+            	state = 'toggle2';
+            }
+          } else if (okTrigger) {
+              state = 'eqMinRatio'; //submit will try to exitFocus - restore focus, stay on this state.
+          } else if (Input.isTriggered('up')) {
+              SoundManager.playCursor();
+              //If we are here, eqOn must be true
+              state = 'eqMinSize';
+          } else if (Input.isTriggered('down')) {
+          	SoundManager.playCursor();
+          	/* Changed my mind about vertical cycling in other columns
+              SoundManager.playCursor();
+              state = 'input';
+              */
+          }
+        } else if (this._state == 'timeoutOn') {
+        	if (Input.isTriggered('right')) {
+        		SoundManager.playCursor();
+       			state = 'toggle3';
+        	} else if (Input.isTriggered('left')) {
+        		SoundManager.playCursor();
+            state = 'eqOn';
+          } else if (okTrigger) {
+            this.refreshToggles();
+          } else if (Input.isTriggered('up')) {
+          	SoundManager.playCursor();
+          	/* Changed my mind about vertical cycling in other columns
+            SoundManager.playCursor();
+            state = 'input';
+            */
+          } else if (Input.isTriggered('down')) {
+            SoundManager.playCursor();
+            if (this._timeoutOnWindow.get()) {
+       				state = 'timeoutInput';
+            } else {
+            	state = 'maxProcesses';
+            }
+          }
+        } else if (this._state == 'timeoutInput') {
+        	if (Input.isTriggered('right')) {
+        		SoundManager.playCursor();
+        		if (this._toggle3Window.get()) {
+       				state = 'toggle3';
+            } else {
+            	state = 'toggle1';
+            }
+        	} else if (Input.isTriggered('left')) {
+        		SoundManager.playCursor();
+            if (this._eqToggleWindow.get()) {
+       				state = 'eqMinSize';
+            } else {
+            	state = 'eqOn';
+            }
+          } else if (okTrigger) {
+              state = 'timeoutInput'; //submit will try to exitFocus - restore focus, stay on this state.
+          } else if (Input.isTriggered('up')) {
+              SoundManager.playCursor();
+              state = 'timeoutOn';
+          } else if (Input.isTriggered('down')) {
+              SoundManager.playCursor();
+              state = 'maxProcesses';
+          }
+        } else if (this._state == 'maxProcesses') {
+        	if (Input.isTriggered('right')) {
+        		SoundManager.playCursor();
+        		if (this._toggle3Window.get()) {
+       				state = 'toggle3';
+            } else {
+            	state = 'toggle2';
+            }
+        	} else if (Input.isTriggered('left')) {
+        		SoundManager.playCursor();
+            if (this._eqToggleWindow.get()) {
+       				state = 'eqMinRatio';
+            } else {
+            	state = 'eqOn';
+            }
+          } else if (okTrigger) {
+              state = 'maxProcesses'; //submit will try to exitFocus - restore focus, stay on this state.
+          } else if (Input.isTriggered('up')) {
+              SoundManager.playCursor();
+              //If "Timeout On" is true, timeoutInput is disabled, so skip it
+              state = this._timeoutOnWindow.get() ? 'timeoutInput' : 'timeoutOn';
+          } else if (Input.isTriggered('down')) {
+          	SoundManager.playCursor();
+          	/* Changed my mind about vertical cycling in other columns
+              SoundManager.playCursor();
+              state = 'input';
+              */
+          }
         } else if (this._state == 'submit') {
             if (Input.isTriggered('left')) {
                 SoundManager.playCursor();
@@ -2745,33 +2934,66 @@ Window_ModPatchCreate.prototype.setState = function(state) {
             case 'error': this._inputText.activate(); this._inputText.refresh(); break;
             case 'submit': this._saveButton.activate(); break;
 
-            case 'eqOn': break;
-            case 'eqMinSize': break;
-            case 'eqMinRatio': break;
+            case 'eqOn': this._eqToggleWindow.activate(); break;
+            case 'eqMinSize': this._eqMinSizeWindow.activate(); this._eqMinSizeWindow.refresh(); break;
+            case 'eqMinRatio': this._eqMinRatioWindow.activate(); this._eqMinRatioWindow.refresh(); break;
 
-            case 'timeoutOn': break;
-            case 'timeoutInput': break;
+            case 'timeoutOn': this._timeoutOnWindow.activate(); break;
+            case 'timeoutInput': this._timeoutInputWindow.activate(); this._timeoutInputWindow.refresh(); break;
 
-            case 'maxProcesses': break;
+            case 'maxProcesses': this._maxProcessesWindow.activate(); this._maxProcessesWindow.refresh(); break;
 
             default: return;
         }
     }
+    this.refreshToggles();
     this.setupDesc();
 }
 
 Window_ModPatchCreate.prototype.refreshToggles = function(state) {
-    if (this._toggle3Window.index() == 0) {
+    if (this._toggle3Window.get()) { //if (this._toggle3Window.index() == 0) {
         //Using explicit diff list, turn off first two toggles
-        this._toggle1Window.opacity = 80;
-        this._toggle2Window.opacity = 80;
+        this._toggle1Window.setColor(this._toggleDisabledColor);
+        this._toggle2Window.setColor(this._toggleDisabledColor);
     } else {
         //Not using explicit diff list, turn on first two toggles
-        this._toggle1Window.opacity = 255;
-        this._toggle2Window.opacity = 255;
+        this._toggle1Window.setColor(this._toggleSelectableColor);
+        this._toggle2Window.setColor(this._toggleSelectableColor);
     }
-    this._toggle1Window.refresh();
-    this._toggle2Window.refresh();
+    if (this._eqToggleWindow.get()) {
+    	this._eqMinSizeWindow.setFontColor(this._toggleSelectableColor);
+    	this._eqMinRatioWindow.setFontColor(this._toggleSelectableColor);
+    	this._eqMinSizeWindow.setCaptionColor(this._toggleSelectableColor);
+    	this._eqMinRatioWindow.setCaptionColor(this._toggleSelectableColor);
+    	this._eqMinSizeWindow.opacity = 255;
+    	this._eqMinRatioWindow.opacity = 255;
+    } else {
+    	this._eqMinSizeWindow.setFontColor(this._toggleDisabledColor);
+    	this._eqMinRatioWindow.setFontColor(this._toggleDisabledColor);
+    	this._eqMinSizeWindow.setCaptionColor(this._toggleDisabledColor);
+    	this._eqMinRatioWindow.setCaptionColor(this._toggleDisabledColor);
+    	this._eqMinSizeWindow.opacity = 100;
+    	this._eqMinRatioWindow.opacity = 100;
+    }
+    if (this._timeoutOnWindow.get()) {
+    	this._timeoutInputWindow.setFontColor(this._toggleSelectableColor);
+    	this._timeoutInputWindow.setCaptionColor(this._toggleSelectableColor);
+    	this._timeoutInputWindow.opacity = 255;
+    } else {
+    	this._timeoutInputWindow.setFontColor(this._toggleDisabledColor);
+    	this._timeoutInputWindow.setCaptionColor(this._toggleDisabledColor);
+    	this._timeoutInputWindow.opacity = 100;
+    }
+
+    //If any of the toggles is selected/active, mark it with a special color
+    switch(this._state) {
+    	case 'toggle1': this._toggle1Window.setColor(this._toggleSelectedColor); break;
+    	case 'toggle2': this._toggle2Window.setColor(this._toggleSelectedColor); break;
+    	case 'toggle3': this._toggle3Window.setColor(this._toggleSelectedColor); break;
+    	case 'eqOn': this._eqToggleWindow.setColor(this._toggleSelectedColor); break;
+    	case 'timeoutOn': this._timeoutOnWindow.setColor(this._toggleSelectedColor); break;
+    	default: break;
+    }
 }
 
 Window_ModPatchCreate.prototype.doExportConfirm = function(file) {
@@ -2804,9 +3026,9 @@ Window_ModPatchCreate.prototype.doExportFinal = function() {
 
     //Consider the setting options they've chosen for how to formulate the patch
     var config = {};
-    config['asset_compare'] = this._toggle1Window.index() ? false : true;
-    config['script_compare'] = this._toggle2Window.index() ? false : true;
-    config['explicit_list'] = this._toggle3Window.index() ? false : true;
+    config['asset_compare'] = this._toggle1Window.get();
+    config['script_compare'] = this._toggle2Window.get();
+    config['explicit_list'] = this._toggle3Window.get();
 
     //Use current eq, timeout, and process settings for how to run the diff exe
     this.setDiffParams();
@@ -2825,9 +3047,10 @@ Window_ModPatchCreate.prototype.setSubmit = function() {
 
 Window_ModPatchCreate.prototype.numberConstrain = function(lower, upper) {
     return function(input) {
+    		if (input == "") return true; //Allow user to not change default/empty
         const num = parseInt(input);
         if (isNaN(num)) { return false; }
-        return (num >= lower && num <= lower);
+        return ((num >= lower) && (num <= upper));
     }
 }
 
@@ -2843,7 +3066,7 @@ Window_ModPatchCreate.prototype.setDiffParams = function() {
 }
 
 Window_ModPatchCreate.prototype.createInputWindow = function() {
-    this._inputText = new Window_Textbox({'x':Graphics.boxWidth/2-120,'y':Graphics.boxHeight/8 });
+    this._inputText = new Window_Textbox({'x':Graphics.boxWidth/4-120,'y':Graphics.boxHeight/8.0 +20, 'caption':"Patch Name:", 'caption_size':20 });
     this._inputText.unlock(['Escape', 'Enter', 'Arrow Down', 'Arrow Up', 'enter', 'ok', 'up', 'down']);
     this._inputText.setSubmitHandler(Window_ModPatchCreate.prototype.setSubmit,this);
     //Only submit from submit button
@@ -2856,58 +3079,52 @@ Window_ModPatchCreate.prototype.createHelpWindow = function() {
 };
 /* I apologize for deciding toggle 3 should actually be on the top after making this */
 Window_ModPatchCreate.prototype.createToggle1Window = function() {
-    this._toggle1Window = new Window_CommandList(['On', 'Off'], (3.0/8.0)*Graphics.boxWidth, (1.0/2.0)*Graphics.boxHeight-this.lineHeight(), {'maxcols':2,'width':(1.0/4.0)*Graphics.boxWidth});
-    this._toggle1Window.select(1); //Default to Off
+    this._toggle1Window = new Window_Checkbox((1.0/4.0)*Graphics.boxWidth-10, (1.0/2.0)*Graphics.boxHeight, 20, {'text':'Compare Assets', 'color':this._toggleSelectedColor, 'disable': '#ffffff', 'direction':'up'});
+    this._toggle1Window.set(false); //Default to Off
     this.addChild(this._toggle1Window);
 };
 Window_ModPatchCreate.prototype.createToggle2Window = function() {
-    this._toggle2Window = new Window_CommandList(['On', 'Off'], (3.0/8.0)*Graphics.boxWidth, (5.0/8.0)*Graphics.boxHeight-this.lineHeight(), {'maxcols':2,'width':(1.0/4.0)*Graphics.boxWidth});
-    this._toggle2Window.select(1); //Default to Off
+    this._toggle2Window = new Window_Checkbox((1.0/4.0)*Graphics.boxWidth-10, (5.0/8.0)*Graphics.boxHeight, 20, {'text':'Compare Scripts', 'color':this._toggleSelectedColor, 'disable': '#ffffff', 'direction':'up'});
+    this._toggle2Window.set(false); //Default to Off
     this.addChild(this._toggle2Window);
 };
 Window_ModPatchCreate.prototype.createToggle3Window = function() {
-    this._toggle3Window = new Window_CommandList(['On', 'Off'], (3.0/8.0)*Graphics.boxWidth, (3.0/8.0)*Graphics.boxHeight-this.lineHeight(), {'maxcols':2,'width':(1.0/4.0)*Graphics.boxWidth});
-    this._toggle3Window.select(1); //Default to Off
+    this._toggle3Window = new Window_Checkbox((1.0/4.0)*Graphics.boxWidth-10, (3.0/8.0)*Graphics.boxHeight, 20, {'text':'Use File List', 'color':this._toggleSelectedColor, 'disable': '#ffffff', 'direction':'up'});
+    this._toggle3Window.set(false); //Default to Off
     this.addChild(this._toggle3Window);
 };
 
 Window_ModPatchCreate.prototype.createEqToggle = function() {
-    //TODO - change x and y
-    this._eqToggleWindow = new Window_Checkbox((3.0/8.0)*Graphics.boxWidth, (3.0/8.0)*Graphics.boxHeight, 20, {'text':'Eq Enable'});
+    this._eqToggleWindow = new Window_Checkbox((1.0/2.0)*Graphics.boxWidth-10, (3.0/8.0)*Graphics.boxHeight, 20, {'text':'Eq Enable', 'color':this._toggleSelectedColor, 'disable': '#ffffff', 'direction':'up'});
     this.addChild(this._eqToggleWindow);
 }
 Window_ModPatchCreate.prototype.createEqMinSizeBox = function() {
-    //TODO - set x and y, setup in update navigation
-    this._eqMinSizeWindow = new Window_Textbox({'x':Graphics.boxWidth/2-120,'y':Graphics.boxHeight/8, 'reset':true });
+    this._eqMinSizeWindow = new Window_Textbox({'x':Graphics.boxWidth*1.0/2.0-90,'y':Graphics.boxHeight*1.0/2.0, 'width':180, 'caption':"Min Size", 'reset':true });
     this._eqMinSizeWindow.unlock(['Escape', 'Enter', 'Arrow Down', 'Arrow Up', 'enter', 'ok', 'up', 'down']);
     this._eqMinSizeWindow.setHint(String(AutoDiff._eqMinSize));
     this._eqMinSizeWindow.setConstraint(this.numberConstrain(1,999999),"Must be an integer between 1 and 999999.", this);
     this.addChild(this._eqMinSizeWindow);
 }
 Window_ModPatchCreate.prototype.createEqMinRatioBox = function() {
-    //TODO - set x and y, setup in update navigation
-    this._eqMinRatioWindow = new Window_Textbox({'x':Graphics.boxWidth/2-120,'y':Graphics.boxHeight/8, 'reset':true });
+    this._eqMinRatioWindow = new Window_Textbox({'x':Graphics.boxWidth*1.0/2.0-90,'y':Graphics.boxHeight*5.0/8.0, 'width':180, 'caption':"Min Ratio", 'reset':true });
     this._eqMinRatioWindow.unlock(['Escape', 'Enter', 'Arrow Down', 'Arrow Up', 'enter', 'ok', 'up', 'down']);
     this._eqMinRatioWindow.setHint(String(AutoDiff._eqMinRatio));
     this._eqMinRatioWindow.setConstraint(this.numberConstrain(50,100),"Must be an integer between 50 and 100.", this);
     this.addChild(this._eqMinRatioWindow);
 }
 Window_ModPatchCreate.prototype.createTimeoutToggle = function() {
-    //TODO - change x and y
-    this._eqToggleWindow = new Window_Checkbox((3.0/8.0)*Graphics.boxWidth, (3.0/8.0)*Graphics.boxHeight, 20, {'text':'Timeout Enable', 'direction':'down'});
+    this._timeoutOnWindow = new Window_Checkbox((3.0/4.0)*Graphics.boxWidth-10, (3.0/8.0)*Graphics.boxHeight, 20, {'text':'Timeout Enable', 'color':this._toggleSelectedColor, 'disable': '#ffffff', 'direction':'up'});
     this.addChild(this._timeoutOnWindow);
 }
 Window_ModPatchCreate.prototype.createTimeoutInput = function() {
-    //TODO - set x and y, setup in update navigation
-    this._timeoutInputWindow = new Window_Textbox({'x':Graphics.boxWidth/2-120,'y':Graphics.boxHeight/8, 'reset':true });
+    this._timeoutInputWindow = new Window_Textbox({'x':Graphics.boxWidth*3.0/4.0-90,'y':Graphics.boxHeight/2.0, 'width':180, 'caption':"Timeout", 'reset':true });
     this._timeoutInputWindow.unlock(['Escape', 'Enter', 'Arrow Down', 'Arrow Up', 'enter', 'ok', 'up', 'down']);
     this._timeoutInputWindow.setHint(String(AutoDiff._searchTimeout));
     this._timeoutInputWindow.setConstraint(this.numberConstrain(20,999999),"Must be an integer between 20 and 999999.", this);
     this.addChild(this._timeoutInputWindow);
 }
 Window_ModPatchCreate.prototype.createMaxProcessInput = function() {
-    //TODO - set x and y, setup in update navigation
-    this._maxProcessesWindow = new Window_Textbox({'x':Graphics.boxWidth/2-120,'y':Graphics.boxHeight/8, 'reset':true });
+    this._maxProcessesWindow = new Window_Textbox({'x':Graphics.boxWidth*3.0/4.0-90,'y':Graphics.boxHeight*5.0/8.0, 'width':180, 'caption':"Max Processes", 'reset':true });
     this._maxProcessesWindow.unlock(['Escape', 'Enter', 'Arrow Down', 'Arrow Up', 'enter', 'ok', 'up', 'down']);
     this._maxProcessesWindow.setHint(String(AutoDiff._maxProcesses));
     this._maxProcessesWindow.setConstraint(this.numberConstrain(1,32),"Must be an integer between 1 and 32.", this);
@@ -2932,7 +3149,7 @@ Window_ModPatchCreate.prototype.setupDesc = function() {
         'eqOn': "This turns on an optimization assumption that could improve diff search time at the risk of excluding the optimal diff. The idea of the assumption is that if two locations that are roughly 'Min Size' large share 'Min Ratio' percent of their data, that it will not consider those segments to possibly match any other segments.",
         'eqMinSize': "Should be a positive integer. Default 30. Represents 'size' of a JSON entry based on the number of primitives, including keys. { 'key1': [1, 2, 3], 'key2': { 'a': [], 'b': null } } is considered to have 9 leaves, for example.",
         'eqMinRatio': "Should be an integer between 50 and 100. Default 90. Recommended to be very high. Represents the minimum percentage of data two JSON entries must share before they are assumed to have originated from the same entry.",
-        'timoutOn': "Setting this to On means that every individual file diff shall be subject to a timeout, measured in seconds. Some diffs would take a very long time to generate; when the timeout is reached, the process will stop and it will use the best diff it found by then.",
+        'timeoutOn': "Setting this to On means that every individual file diff shall be subject to a timeout, measured in seconds. Some diffs would take a very long time to generate; when the timeout is reached, the process will stop and it will use the best diff it found by then.",
         'timeoutInput': "The time in seconds that a diff search is allowed to run. The longer the algorithm runs, the better result it will find. All diffs will work for creating game patches, but better diffs obscure more of the original files' data. IF SPARING THE TIME IS AT ALL AN OPTION, MAKE THIS VALUE AS HIGH AS POSSIBLE.",
         'maxProcesses': "You can have multiple diff search algorithms run in parallel, but this may consume more resources, perhaps even crash your program if unregulated. This number is the maximum number of subprocess that can be spawned. Default 1."
     }
@@ -2960,7 +3177,7 @@ Window_ModPatchCreate.prototype.close = function() {
 }
 Window_ModPatchCreate.prototype.open = function() {
     Window_Base.prototype.open.call(this);
-    //this._inputText.open();
+    this._inputText.open();
     this._toggle1Window.open();
     this._toggle2Window.open();
     this._toggle3Window.open();
@@ -3876,23 +4093,14 @@ AutoDiff.textDiff = function(fileA, fileB, outfile) {
      2: modified version of file (filename string)
      3: output path (path string)
      4: 0 = treat the files as newline-delimited text files, 1 = treat the files as JSON
+      - the following will be constant, and supplied by the class later -
      5: is eq search optimization enabled (0 = disabled)
      6: eq search optimization minSize (unsigned int)
      7: eq search optimization minRatio (double)
      8: is search timeout enabled (0 = disabled)
      9: search timeout, in sec (unsigned long int)
      */
-    this.addChild(child_process.execFile("jsonDiff.exe", [fileA, fileB, outfile, "0", \
-        this._eqOn, this._eqMinSize, this._eqMinRatio,
-        this._timeoutOn, this._searchTimeout],
-        (error, stdout, stderr) => {
-            console.log(stdout);
-            if (error) {
-                AutoDiff.reportError(this[0], this[1]);
-            } else {
-                AutoDiff.reportSuccess(this[0], this[1], this[2])
-            }
-        }.bind([fileA, fileB, this.getNewChildId()])));
+    this.addChildProcess([fileA, fileB, outfile, "0"]);
 
     /* DEFUNCT - MOVED TO C++ EXECUTABLE
     var a = fs.readFileSync(fileA, {encoding:"utf8"}).split(/[\r\n]+/);
@@ -4025,23 +4233,14 @@ AutoDiff.diff = function(fileA, fileB, outfile) {
      2: modified version of file (filename string)
      3: output path (path string)
      4: 0 = treat the files as newline-delimited text files, 1 = treat the files as JSON
+      - the following will be constant, and supplied by the class later - 
      5: is eq search optimization enabled (0 = disabled)
      6: eq search optimization minSize (unsigned int)
      7: eq search optimization minRatio (double)
      8: is search timeout enabled (0 = disabled)
      9: search timeout, in sec (unsigned long int)
      */
-    this.addChild(child_process.execFile("jsonDiff.exe", [fileA, fileB, outfile, "0", \
-        this._eqOn, this._eqMinSize, this._eqMinRatio,
-        this._timeoutOn, this._searchTimeout],
-        (error, stdout, stderr) => {
-            console.log(stdout);
-            if (error) {
-                AutoDiff.reportError(this[0], this[1]);
-            } else {
-                AutoDiff.reportSuccess(this[0], this[1], this[2])
-            }
-        }.bind([fileA, fileB, this.getNewChildId()])));
+    this.addChildProcess([fileA, fileB, outfile, "1"]);
 
     /* DEFUNCT - MOVED TO C++ EXECUTABLE
     var a = JSON.parse(fs.readFileSync(fileA, {encoding:"utf8"}));
@@ -4060,17 +4259,71 @@ AutoDiff.diff = function(fileA, fileB, outfile) {
     */
 }
 
+AutoDiff.tryNextProcess = function() {
+	console.log("in Try Next");
+		while (this._activeProcesses < parseInt(this._maxProcesses) && (this._processes.length > 0)) {
+	  	const args = this._processes.pop();
+	  	//We want the file names, and whether it's a JSON or list/line/text file. Other parameters
+	  	//  should be constant throughout an entire project diff
+	  	let exec = path.join(path.dirname(process.mainModule.filename), "jsondiff.exe");
+	  	//exec = "start "+exec;
+	  	//DEBUG
+	  	console.log("Running diff on the following files: "+args[0]+" "+args[1]);
+	  	console.log("Command: "+exec+(args.concat([this._eqOn, this._eqMinSize, this._eqMinRatio,
+	      this._timeoutOn, this._searchTimeout])).join(" "));
+
+			let p = child_process.exec(exec+" "+(args.concat([this._eqOn, this._eqMinSize, this._eqMinRatio,
+	      this._timeoutOn, this._searchTimeout])).join(" "));
+
+			//p.on('close', this.onProcessTerminate2(args));
+
+	  	//let p = child_process.execFile(exec, args.concat([this._eqOn, this._eqMinSize, this._eqMinRatio,
+	    //  this._timeoutOn, this._searchTimeout]), this.onProcessTerminate(args));
+
+			const fileA = args[0];
+			const fileB = args[1];
+			const out = args[2];
+	  	this._running[out] = [p, fileA, fileB];
+	  	this._activeProcesses += 1;
+	  }
+}
+
+AutoDiff.onProcessTerminate = function(args) {
+	const fileA = args[0];
+	const fileB = args[1];
+	const fileC = args[2];
+	return function(error, stdout, stderr) {
+		console.log("I promise that this ran and stuff");
+    console.log(stdout);
+    if (error) {
+    		console.log(stderr);
+        AutoDiff.reportError(fileA, fileB);
+    } else {
+        AutoDiff.reportSuccess(fileA, fileB, fileC);
+    }
+  }
+}
+
+//TODO - more than simply log-and-continue?
 AutoDiff.reportError = function(fileA, fileB) {
-    //TODO
+    this._activeProcesses -= 1;
+    console.log("Failed to create diff for: "+fileA+" "+fileB);
+    this.tryNextProcess();
 }
 
-AutoDiff.reportSuccess = function(fileA, fileB, pId) {
-    //TODO
+AutoDiff.reportSuccess = function(fileA, fileB, fileC) {
+    this._activeProcesses -= 1;
+    console.log("Successfully created file: "+fileC+" from files "+fileA+" "+fileB);
+    this.tryNextProcess();
 }
 
-AutoDiff.getNewChildId = function() {
-    //TODO
-    return 1;
+AutoDiff.checkDone = function() {
+	return ((this._activeProcesses == 0) && (this._processes.length == 0))
+}
+
+AutoDiff.addChildProcess = function(cpArgs) {
+    this._processes.push(cpArgs);
+    this.tryNextProcess();
 }
 
 AutoDiff.initializeExecArgs = function() {
@@ -4080,6 +4333,9 @@ AutoDiff.initializeExecArgs = function() {
     this._timeoutOn = "0";
     this._searchTimeout = "90";
     this._maxProcesses = "1";
+    this._activeProcesses = 0;
+    this._processes = [];
+    this._running = {};
 }
 
 AutoDiff.setExecArgs = function(args) {
@@ -4243,7 +4499,9 @@ AutoDiff.createPatch = function(config, name) {
     }
     function fileDiffSequential(fileList, parentPath="") {
         const src = path.join(ModManager._base,parentPath);
-        for (file of list) {
+        for (var k in list) {
+        		const file = list[k];
+
             const orig = path.join(src, file);
             const patch = path.join(curr, file);
 
@@ -4253,7 +4511,7 @@ AutoDiff.createPatch = function(config, name) {
                 //If the file to be compared is a JSON object
                 if (file.match(/\.json$/i)) {
                     //Copy the diff of the two files named "file" into the patch folder
-                    const newfile = path.join(ModManager._path, name, parentPath, file);
+                    const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
                     //Make sure requisite parent directory hierarchy exists
                     //  that the file will be written into
                     this.createReqDirectories(newfile);
@@ -4266,16 +4524,14 @@ AutoDiff.createPatch = function(config, name) {
                     //  due to encryption differences
                     if (this.unencryptBytesEqual(orig_bytes, patch_bytes, orig_key, mod_key, file)) continue;
                     //Copy new image/audio/asset into
-                    const newfile = path.join(ModManager._path, name, parentPath, file);
+                    const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
                     //Make sure requisite parent directory hierarchy exists
                     //  that the file will be written into
                     this.createReqDirectories(newfile);
                     fs.writeFileSync(newfile, patch_bytes);
                   //If the file to be compared is a text or script file
                 } else if (file.match(/\.[txt|csv]$/i) || file.match(/\.js$/i)){
-                    //Skip this script and scripts added to make this one work
-                    if (ModManager._dependencies.includes(file)) { continue; }
-                    const newfile = path.join(ModManager._path, name, parentPath, file);
+                    const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
                     //Make sure requisite parent directory hierarchy exists
                     //  that the file will be written into
                     this.createReqDirectories(newfile);
@@ -4303,11 +4559,13 @@ AutoDiff.createPatch = function(config, name) {
         // but not the modded install, that it was not worthwhile to
         // include mechanisms to signal to actively delete those files
         // when the patch is applied.
-        console.log("made it 3");
         if (fs.existsSync(curr)) {
-            console.log("made it 4");
+            console.log(curr);
             files = fs.readdirSync(curr);
             files.forEach(function(file, index) {
+            		//Skip this script and files added to make this one work
+            		if (ModManager._dependencies.includes(file)) { return; }
+
                 if (fs.lstatSync(path.join(parentPath, file)).isDirectory()) {
                     fileDiffRecurse(path.join(parentPath, file));
                 } else {
@@ -4326,7 +4584,7 @@ AutoDiff.createPatch = function(config, name) {
                             console.log(file);
                             if (file.match(/\.json$/i)) {
                                 //Copy the diff of the two files named "file" into the patch folder
-                                const newfile = path.join(ModManager._path, name, parentPath, file);
+                                const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
                                 //Make sure requisite parent directory hierarchy exists
                                 //  that the file will be written into
                                 this.createReqDirectories(newfile);
@@ -4341,7 +4599,7 @@ AutoDiff.createPatch = function(config, name) {
                             //  due to encryption differences
                             if (this.unencryptBytesEqual(orig_bytes, patch_bytes, orig_key, mod_key, file)) return;
                                 //Copy new image/audio/asset into
-                                const newfile = path.join(ModManager._path, name, parentPath, file);
+                                const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
                                 //Make sure requisite parent directory hierarchy exists
                                 //  that the file will be written into
                                 this.createReqDirectories(newfile);
@@ -4350,7 +4608,7 @@ AutoDiff.createPatch = function(config, name) {
                             //If script flag is checked, we can copy in new/changed assets;
                             //  files with extensions that are not common are copied regardless, to be safe
                             } else if (file.match(/\.[txt|csv]$/i) || file.match(/\.js$/i)) {
-                                const newfile = path.join(ModManager._path, name, parentPath, file);
+                                const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
                                 //Make sure requisite parent directory hierarchy exists
                                 //  that the file will be written into
                                 this.createReqDirectories(newfile);
@@ -4374,7 +4632,7 @@ AutoDiff.createPatch = function(config, name) {
                             //Make sure requisite parent directory hierarchy exists
                             //  that the file will be written into
                             this.createReqDirectories(newfile);
-                            fs.writeFileSync(newfile, fs.readDirSync(path.join(curr, file), {encoding: 'utf8'}));
+                            fs.writeFileSync(newfile, fs.readFileSync(path.join(curr, file), {encoding: 'utf8'}));
                           }
                     }
                 }
@@ -4386,65 +4644,19 @@ AutoDiff.createPatch = function(config, name) {
     fileDiffRecurse();
   }
 
+  console.log("Ok, now we wait...")
+  //Wait until all process calls have terminated - "collect" threads
+  while (!this.checkDone()) {
+    	for (let outfile in this._running) {
+    		let p = this._running[outfile];
+    		if (fs.existsSync(outfile)) {
+    				p[0].unref();
+			      this.reportSuccess(p[1], p[2], outfile);
+			      delete this._running[outfile];
+    			}
+    	}
+  }
 }
-
-
-
-/*
-console.log(AutoDiff.arrayDiff(
-[{"events" : [{A: 1, B: 2},{},{E: 1}], "tileset": "red"},
- {"events" : [{Q: 7}, {C: 2}], "tileset": "blue"},
- {},
- {"events" : [{R: 5}, {L: 3}, {C: 1}], "tileset": "yellow"}],
-
-[{"events" : [{A: 1, B: 2},{D: 1},{E: 1}, {B: 4}], "tileset": "red"},
- {"events" : [{Q: 5, Y: 3}, {C: 2}], "tileset": "blue"},
- {"events" : [{H: 3}], "tileset": "red"},
- {"events" : [{S: 2}, {L: 4, D: 3}], "tileset": "brown"},
- {"events" : [{R: 5}, {L: 3}, {C: 1}], "tileset": "yellow"}]
-    ))
-    */
-//console.log("Separator");
-/*
-console.log(AutoDiff.countLeaves({"events" : [{A: 1, B: 2},{},{E: 1}], "tileset": "red"}));
-console.log(AutoDiff.countLeaves([{"events" : [{A: 1, B: 2},{},{E: 1}], "tileset": "red"},
- {"events" : [{Q: 7}, {C: 2}], "tileset": "blue"},
- {},
- {"events" : [{R: 5}, {L: 3}, {C: 1}], "tileset": "yellow"}]));*/
-
- /*
- console.log(AutoDiff.arrayDiff([{A: 1, B: 2},{},{E: 1}], [{A: 1, B: 2},{D: 1},{E: 1}, {B: 4}])[0]);
- console.log(AutoDiff.jsonDiff({"events" : [{Q: 7}, {C: 2}], "tileset": "blue"},{"events" : [{Q: 5, Y: 3}, {C: 2}], "tileset": "blue"}, 0, -1)[0]);
- console.log(AutoDiff.countLeaves([{"events" : [{H: 3}], "tileset": "red"},
- {"events" : [{S: 2}, {L: 4, D: 3}], "tileset": "brown"}]));
-*/
-
-var _s1 = [{},
- {"events" : [{R: 5}, {L: 3}, {C: 1}], "tileset": "yellow"}]
-var _p1 = 
-[{"events" : [{H: 3}], "tileset": "red"},
- {"events" : [{S: 2}, {L: 4, D: 3}], "tileset": "brown"},
- {"events" : [{R: 5}, {L: 3}, {C: 1}], "tileset": "yellow"}]
-var _diff1 = AutoDiff.arrayDiff(_s1, _p1);
-console.log(_diff1);
-ModManager.patchObj(_s1, _diff1[1]);
-console.log(_s1);
-console.log(_p1);
-/*AutoDiff.arrayDiff(
-[{},
- {"events" : [{R: 5}, {L: 3}, {C: 1}], "tileset": "yellow"}],
-
-[{"events" : [{H: 3}], "tileset": "red"},
- {"events" : [{S: 2}, {L: 4, D: 3}], "tileset": "brown"},
- {"events" : [{R: 5}, {L: 3}, {C: 1}], "tileset": "yellow"}]
-    )*/
- //console.log(_diff1);
-
-
-console.log(AutoDiff.checkEquality(
-{"events" : [{R: 5}, {L: 3}, {C: 1}], "tileset": "yellow"},
-{"events" : [{R: 5}, {L: 3}, {C: 1}], "tileset": "yellow"}
-    ))
 
 //add events to map 0, change event 0 in map 1, add map 2, insert map before map 3
 
@@ -4521,5 +4733,3 @@ Array.prototype.equals = function (arr) {
 // * @require 1"
 // "
 // Also so is this:  * @type common_event
-
-console.log(AutoDiff.textDiff(path.join(ModManager._base, 'js', 'plugins', 'MadeWithMv.js'), path.join('js', 'plugins', 'MadeWithMv.js')))
