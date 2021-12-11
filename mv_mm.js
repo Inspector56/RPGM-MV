@@ -146,6 +146,29 @@
  *
  *
  *
+ * MOD CREATION BEST PRACTICES
+ * ----------------------------------------
+ *   1) The point of this modmanager is to avoid distribution of modified versions of paid or
+ *    proprietary games. As such, if the base game assets were encrypted, and some of the
+ *    modded assets you use are modified version of once-encrypted assets, you should encrypt
+ *    your project before creating and distributing the patch. If you choose to encrypt, it
+ *    MUST be done BEFORE the patch is created.
+ *   2) It is heavily advised, that if you plan on modifying how the core codebase of RPG Maker
+ *    MV works, you DO NOT modify any of the primary files. These are the files with "rpg" at
+ *    the start of their name (in addition to "main.js"). Please only modify or add js files
+ *    that are in the js folder.
+ *
+ *    The reason for that is: Often plugin files will modify or overwrite functions that appear
+ *    in those core scripts. This ModManager, when creating a patch, will leave out any files
+ *    that have not been changed. If you change a core script, then consider the following
+ *    situation:
+ *    The player starts the game. This loads up the core scripts. Then it loads it plugins, which
+ *    will layer over the existing code, changing some functions from the core scripts. Then a player
+ *    chooses to load a modded save file, or start a modded game. The game is forced to load the
+ *    modded core file in as part of the modded instance, but in reality most functions in that
+ *    file have not been modified. Those functions get reset when this core file is loaded again,
+ *    overwriting any changes enacted by the plugins.
+ *
  * =============================================================================
  * ** SCRIPTS **
  * =============================================================================
@@ -195,7 +218,6 @@
  *   It is unlikely for another function to touch these, so they probably will not
  * result in a conflict
  *
- * - Decrypter.decryptImg
  * - Decrypter.decryptHTML5Audio
  * - WebAudio.prototype._load
  * - WebAudio.prototype._onXhrLoad
@@ -203,9 +225,12 @@
  *
  * --------- Save List Drawing -------------------------------------------------
  *   It is quite possibly modified by any script that affects the appearance of
- * the save menu, the save list in particular.
+ * the save menu, the save list in particular, which could result in a conflict
+ * with the first listed overriden function. The second one is unlikely to be
+ * the source of a conflict.
  *
  * - Window_SavefileList.prototype.drawPartyCharacters
+ * - Scene_Load.prototype.onSavefileOk
  *
  * =============================================================================
  * ** WARNINGS **
