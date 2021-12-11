@@ -7,8 +7,149 @@
  * =============================================================================
  * ** HOW TO USE **
  * =============================================================================
- * 1) create a folder, called "mods", in the same directory as Game.exe
+ *
+ * 1) Make sure that this script, and its dependency, "window_textbox.js", has been
+ *  added to the plugins list (plugins.js). Neither script has any parameters.
+ * 2) Create a folder, called "mods", in the same directory as Game.exe and "www"
  * 
+ *
+ *
+ * TO USE (INSTALL) A PATCH:
+ *   3) Create a directory in the mods folder called "patches".
+ *   4) Copy the provided patch folder into the "patches" folder.
+ *   5) Launch the game, navigate down to the "Mods" option, and select it.
+ *   6) Select "Patches".
+ *   7) Navigate the patch list on the left to find your desired patch.
+ *   8) Select whichever patch tags you want.
+ *   9) Select the apply button to apply the patch. NOTE: The patch is not yet playable.
+ *   10) Repeat steps 6-8 for all desired patches, in the desired order. NOTE: It is not
+ *    recommended to try to apply multiple patches in one installation, as there is a good
+ *    chance the patches will have some conflict. But the possibility is supported.
+ *   11) OPTIONAL: if you make a mistake or change your mind, use the Reset button to clear
+ *    the your patch-in-progress and start from a blank slate.
+ *   12) Select Export when you are ready to finish the patch. This may take a few minutes.
+ *   13) Name your patch, and hit Enter.
+ *   14) Continue pressing escape to exit to the Title menu. Press New Game, and select
+ *    your named patch from the options. Alternatively, if you already have save games,
+ *    you can use the Save Convert menu in the Mods page to convert the saves to the new
+ *    patch (see guide below).
+ *
+ *
+ *
+ * HOW TO CONVERT SAVES
+ * ----------------------------------------
+ *   15) To convert a save between patches, or to/from the vanilla game to a given
+ *    patch, you must:
+ *       a) have at least one existing save.
+ *       b) have at least one installed patch (see above for how to do this).
+ *   16) Go to the game's Title menu.
+ *   17) Navigate to the "Mods" option.
+ *   18) In the Mods page, navigate to the Save Convert tab.
+ *   19) In the list on the left, scroll through until you find the savegame that
+ *    you want to convert. Hit enter to select it.
+ *   20) The menu will focus to the list on the right; scroll through the list
+ *    and hit Enter to select the patch installation you want to convert the save
+ *    to.
+ *   21) The menu will focus back to the left list; THE SAVE HAS NOT BEEN CONVERTED
+ *    YET. Scroll through the save list to select the slot to save the converted
+ *    version of the save to. If there is an existing save in that slot, it will
+ *    prompt you to confirm that you want to overwrite that save file.
+ *   22) Hit enter again, and the save conversion should apply quickly. If it worked,
+ *    the selected slot on the left list should look different (either have data where
+ *    before it was empty, or the patchname listed on it will look different).
+ *
+ *
+ *
+ * =============================================================================
+ * ** HOW TO CREATE A PATCH **
+ * =============================================================================
+ * 
+ *   3) Create a new folder under the "mods" folder. Call this folder "base".
+ *   4) Save the original game data in this "base" folder, ie: copy the contents of
+ *    of the game's "www" folder (ie, a copy of folders like "data", "img", etc)
+ *    into "mods/base/".
+ *   5) Modify the game (under "www", not "mods/base") as you like. (There is a 
+ *    separate guide for this step below)
+ *   6) Start the game, and from the Title menu navigate to the Mods option.
+ *   7) Within the Mods menu, navigate to the "Create" tab on the far right.
+ *   8) In this menu, you will see a textbox, three toggles beneath it, and a button
+ *    to begin exporting.
+ *      i) The textbox is where you provide the name of the patch; it determines
+ *        the name of the folder in which the patch will be generated. 
+ *      ii) The top toggle, if enabled, means that you will provide an explicit list
+ *        (as an array) that contains the files that you want to be diffed and included
+ *        in the patch. Otherwise, when the diff occurs, every file under every folder
+ *        will be analyzed (subject to the next two toggles). By default, the name of
+ *        the list file it expects is LIST.txt, and it should be located in the "mods"
+ *        folder.
+ *        IMPORTANT NOTE: within the list file, you must provide filepaths to the file.
+ *        it does not suffice to merely give the filename.
+ *      iii) The second, if turned on, means that you want it to scan the image, audio,
+ *        and video files. By default, the patch only looks at data files (map data,
+ *        database info like party members and enemies, etc).
+ *      iv) The third toggle, if turned on, means that you want it to scan .js files
+ *        (scripts and plugins). By default, the patch only looks at data files (map
+ *        data, database info like party members and enemies, etc).
+ *   9) When you are ready to export, enter a valid folder name in the textbox and,
+ *    still from the textbox, press Enter to be taken to the submit button. Press
+ *    enter again to confirm and begin exporting the patch. Note that it may take
+ *    a while to export. You will know it is finished when it automatically leaves
+ *    the Create submenu of the Mods page.
+ *    NOTE: if for some reason the export is interrupted (sometimes Windows will close
+ *    RPG Maker MV processes if they take too many resources for a long task), try again
+ *    with the same patch name - it should resume diffing from where it left off. There
+ *    is no danger of "corrupted files" from an early abort.
+ *   10) OPTIONAL: create a .js file that helps convert savegames. See section below.
+ *   11) Your patch is ready under "mods/patches/{yourPatchName}/". Copy it somewhere, zip
+ *    it, and post at your leasure.
+ *   
+ *
+ *
+ * HOW TO START MODIFYING ANOTHER GAME
+ * ----------------------------------------
+ *   To modify an RPG Maker MV game, you must own the software RPG Maker MV.
+ *   Create a new RPG Maker MV game project.
+ *   If the original game does not have any encrypted assets in it, then you simply have to copy
+ * all of the game files over. Copy /img/ into the project's /img/, /data/, etc. Every folder in
+ * the game's "www" folder, every folder in the same directory as "package.json" and "index.html".
+ *   If the game does have encrypted assets, then you will have to find an RPG Maker MV decrypter.
+ * several exist. Decrypt the assets. The one other change you have to do, is open up System.json
+ * under the data folder, and change "hasEncryptedImages" and "hasEncryptedAudio" to "false". Both
+ * of these will be at the very end of the file.
+ *   Once all of the assets and data files are in place, unencrypted, in the project, you can simply
+ * start editing from the Game.rpgproject
+ *   
+ *
+ *
+ * MAKING A SAVE CONVERSION SCRIPT
+ * ----------------------------------------
+ *   This is slightly more advanced, as it will require you to actually write js code that functions
+ * within the context of the game. How this works, is you will write a .js file (convert.js by is
+ * the default expected name) and leave it at the top level of your patch - in the same directory as
+ * folders like "img", "data", "js", etc.
+ *   Within the file, you will put all of your code in one function. The function is called
+ * "ModManager.convertSave"; it is heavily recommended that, out of consideration for other patches,
+ * you alias this function, as opposed to overwrite.
+ *   eg: "let my_patchname_save_convert = ModManager.convertSave;
+ *        ModManager.convertSave = function() {
+ *          {your code}
+ *          my_patchname_save_convert.call(this);
+ *        }
+ *       "
+ *   Note that when this function is run, the context of the save will effectively be loaded.
+ * That means that all of $data and $game objects ($gameParty, $gameMap, $dataMap, $dataActors)
+ * Will all be loaded - the $game objects will have the "old patch" data, since they are from
+ * a save on the old patch, and the $data objects will be those of your patch.
+ *   This is your chance to increment game variables as needed, initialize elements of objects
+ * from scripts that you added, that normally would get initialized during game creation (new
+ * game start).
+ *
+ *
+ *
+ * =============================================================================
+ * ** SCRIPTS **
+ * =============================================================================
+ *
  * SCRIPTS vs PATCHES
  *   There are two ways to mod a game instance. Scripts are essentially plugins,
  * but with a separate ini (scripts.js) that is managed here, and not by RPGM. When you
@@ -21,137 +162,26 @@
  * generated one, you can then choose to start a game on that patched instance of the game.
  * Once you start a game, you cannot switch patches; loading a game from a different patch
  * should automatically switch you back to that save state, within that patch.
+ *   The primary use case of this mv_mm script deals with patches. Most people will have
+ * no use for the scripts features. The only real advantage of the scripts menu is the
+ * ability to configure parameters from within a running instance of the game.
+ *   WARNING: because of the way that script resources are loaded, and because this functionality
+ * became less important throughout development and support was dropped, scripts that are turned
+ * on through this mechanism will not truly be "turned off" until the game is restarted.
  *
  * TO USE A SCRIPT:
- * 2) create a directory in the mods folder called "scripts".
- * 3) copy the script file (.js) into the "scripts" folder.
- * 4) launch the game, navigate down to the "Mods" option, and select it.
- * 5) select "Scripts".
- * 6) navigate to a desired script; 'enable' turns the script on or off.
- * 7) select parameters to the script with the parameter dropdown.
- * 8) for a given parameter, the description box should give a description
+ * 3) create a directory in the mods folder called "scripts".
+ * 4) copy the script file (.js) into the "scripts" folder.
+ * 5) launch the game, navigate down to the "Mods" option, and select it.
+ * 6) select "Scripts".
+ * 7) navigate to a desired script; 'enable' turns the script on or off.
+ * 8) select parameters to the script with the parameter dropdown.
+ * 9) for a given parameter, the description box should give a description
  *   when available. Use the input window to adjust the value of the parameter,
  *   and the Save button to save changed values.
- * 9) assuming you have been saving your changes, press escape until you return
+ * 10) assuming you have been saving your changes, press escape until you return
  *   to the title menu. Scripts will take effect when you load a game or start
  *   a new one.
- *
- * TO USE A PATCH:
- * 2) create a directory in the mods folder called "patches".
- * 3) copy the provided patch folder into the "patches" folder.
- * 4) launch the game, navigate down to the "Mods" option, and select it.
- * 5) select "Patches".
- * 6) navigate the patch list on the left to find your desired patch.
- * 7) select whichever patch tags you want.
- * 8) select the apply button to apply the patch. NOTE: The patch is not yet playable.
- * 9) repeat steps 6-8 for all desired patches, in the desired order.
- * 10) note: if you make a mistake or change your mind, use the Reset button to clear
- *   the your patch-in-progress and start from a blank slate.
- * 11) select Export when you are ready to finish the patch.
- * 12) name your patch, and hit Enter.
- * 13) continue pressing escape to exit to the title menu. Press New Game, and select
- *    your named patch from the options.
- * 
- *
- * =============================================================================
- * ** HOW TO MAKE A PATCH **
- * =============================================================================
- * 
- *   First, be warned that making a patch is a tedious, possibly difficult endeavor.
- *   Changing the game data fundamentally means adding, removing, or replacing certain
- * segments - maps, events, troops, etc. The easy way, from the patch-maker's perspective,
- * is the following rule: given original game data A and new/patch game data B, used to
- * create game version C then:
- * - if something is in A and not B, DELETE it, it will not be in C
- * - if something is in A and B, REPLACE it, use the version in B
- * - if something is in B and not A, ADD/CREATE it, it will appear in C
- *   However, there are problems with this. If you apply multiple different patches that
- * affect different things, something that is added by the first patch may not be in the
- * second patch, and so when the second patch is being applied, the addition from the
- * first patch is simply deleted. This could be negated by removing the first rule, but
- * that also is not perfect; you may need to delete old events. Additionally, perhaps you
- * want to add options/parameters to your patch, so that users can choose to incorporate
- * some changes but not others.
- *   For this more fine-grain and versatile approach, I decided to use note tags. Include, 
- * in an objects notes section (more details later), a line with a command of this format:
- *                  <MM (COMMAND) (TAG LIST)>
- * Replace the things in parentheses, so for example:
- *                  <MM ADD 1,blob,e17g>
- * Valid commands are ADD/CREATE/NEW (meaning ADD, CREATE, and NEW are equivalent), REPLACE/EDIT/CHANGE/UPDATE, and DELETE/REMOVE.
- * Valid tags are alphanumeric, and NOT case sensitive.
- * Notice the tag list has no spaces.
- * For all items, DELETE & REPLACE-type commands work with respect to ID number; if no game element in the base game files
- *  has an ID that matches the ID of the game element whose note has a REPLACE-type command in it, nothing will occur.
- * A command should not span multiple lines; it should all be on one line.
- * Alternatively, you can provide no taglist (eg <MM ADD>); this command will ALWAYS activate - even
- *  if no tags are specified during the install.
- *
- * WHAT IS THIS TAG LIST? HOW DOES IT WORK?
- * ----------------------------------------
- *   The tag list is a list of comma separated tags; you can name these tags whatever you
- * like, as long as you are consistent with yourself, and you list all the valid tags in
- * a text file; more on that later. Some examples: "blue,red,black" or "1,2,6,11".
- *   Here, a tag represents a subversion of the patch. A user, when applying the patch,
- * will be able to choose which combination of tags will be "active" when the tag is applied.
- * If ANY (NOT ALL) active tag is in a command line, the command line will take effect when
- * the patch is applied.
- *  An example: our tags are "difficulty","blue","permadeath".
- *  "blue" makes the player blue.
- *  "difficulty" makes the game more difficult.
- *  "permadeath" makes the game have permadeath.
- *   If someone were to make such a versatile patch, and a user wanted to make their player
- * blue and the game more difficult but not have to deal with permadeath, then when they
- * go into the Mods > Patch menu and select this patch, before they go to apply the patch,
- * they will turn on the "blue" and "difficulty" tags.
- *   One way this might work, is that the blue patch provides an alternative asset for the player.
- * Patch assets are covered in depth under ADVANCED.
- *   Difficulty might appear in several notes sections of common events or map events, and perhaps
- * Enemy notes or Skill notes to increase enemy health, give them better skills, etc. The commands
- * that appear in the notes would likely look like <MM CHANGE difficulty>
- *   Suppose there is a command in the patch that looks like <MM ADD difficulty,permadeath>; our
- * user did not want permadeath, BUT since hey selected 'difficulty' this command will still activate
- * /take effect.
- *   I chose to do it this way because, in general with patches, you might want certain things
- * to be common to different configurations. An easy example: instead of three unrelated tags, our
- * patch only does one thing: it is a combat revamp. It still has three tags, however: 'easy', 'medium',
- * and 'hard'. Since the combat will be revamped either way, no matter which tag is chosen, some
- * code/common events will want to be changed. And perhaps there are certain difficulty mechanics - no
- * quicksaving, no resting, health doesn't regenerate between fights, etc - that would be common to
- * medium and hard, but that people using easy would be spared of.
- *   What if the user picks multiple, say easy and hard? It's up to the patch maker to leave clear
- * installation instructions or else to "idiotproof" their patch; as a trivial example, suppose we have
- * a variable to be set to 3 different values based on easy, medium, or hard - 1, 3, and 5 respectively.
- * Supposing you think hard should take priority/precedence, you would have the easy tag add "var = 1",
- * then directly below that the line that has the medium tag add "var = 3", and then beneath that, the
- * line that has the hard tag add "var = 5", so if the hard tag is used, its value always "wins".
- *
- * This API has many weaknesses, but it is the one I decided upon after much thought. If you believe
- * you have a better patch-coding API for RPGMaker MV, please contact me, I would be very happy to
- * discuss it.
- *
- * =============================================================================
- * ** ADVANCED **
- * =============================================================================
- *
- *   TODO: You can specify an exact list of which files you want to diff/create a patch for...
- *
- *   A NOTE ON ENCRYPTED ASSETS: [VERY IMPORTANT]
- * 
- *   The way this modmanager is implemented, any asset file that appears in a patch is copied over
- * when the patch is applied, even if it causes an overwrite. Any legwork to avoid redundancy or
- * excess regarding the assets is handled during patch creation. If, during patch creation, you
- * check the box to have it compare asset files, it will compare assets (images and audio) in your
- * modded game directory with your base/vanilla game directory and look for changes and additions.
- * Consider the following problem, however: The base game uses encrypted assets, and you decrypt
- * these to more easily mod the game. When you finish, however, you decide you want to re-encrypt,
- * to protect assets that you added or changed. A simple byte-by-byte comparison of these files
- * will not work - by this metric, since all of the bytes have been decrypted-and-re-encrypted
- * with another key, every basic file - even ones you didn't touch (but probably didn't go to
- * the trouble of cleaning up/deleting once you were done, why should you) would be copied into
- * the patch. Well, my modmanager took that case into account, and will compare the decrypted
- * bytes. HOWEVER. This only works for comparing two files under different encryption; it does NOT
- * work if one file is not encrypted! RPG Maker MV, when it encrypts files, seems to 
- *
  *
  * =============================================================================
  * ** CONFLICTS **
@@ -210,7 +240,7 @@ const child_process = require('child_process');
 
 ModManager._path                = path.join(path.dirname(path.dirname(process.mainModule.filename)), 'mods');
 ModManager._base                = path.join(ModManager._path, 'base');
-ModManager._dependencies        = ["mv_mm.js", "window_textbox.js", 'jsondiff.exe'];
+ModManager._dependencies        = ["mv_mm.js", "window_textbox.js", 'jsondiff.exe','Game.rpgproject'];
 ModManager._listFileName        = "LIST.txt";
 ModManager._baseGameText        = "|Base Game|";
 ModManager._tempFolder          = "temp";
@@ -220,13 +250,18 @@ ModManager._convertFilename     = "convert.js";
 ModManager._gameLoaded          = false;
 ModManager._scripts             = {}; //Maps each script name to Boolean: true for active, false for disabled
 ModManager._parameters          = {}; //Holds parameter settings for each script
+ModManager._patchPlugins        = []; //Remembers which patch's plugins are already loaded, so we don't repeated load them if we reload saves
 ModManager._awaiting            = {};
 ModManager._callbacks           = {};
 ModManager._encryptionList      = {}; //Builds a map of modded assets to the proper encryption key to use
 ModManager._encryptionListFile  = 'decryptMap.xx' //arbitrary file extension
 
 ModManager.set = function(patchname) {
-    this._currPatch = path.join(this._path,'patches', patchname,'data');;
+    this._currPatch = patchname;
+}
+
+ModManager.convertSave = function() {
+    /* EMPTY */
 }
 
 function NullFunction(args) {
@@ -278,12 +313,11 @@ ModManager.savePatch = function(outname) {
     //should never get here with an outname folder that already exists
     fs.mkdirSync(path.join(this._path, this._installsFolder,outname),  { recursive: true });
     this.deepCopy(path.join(this._path, this._tempFolder), path.join(this._path, this._installsFolder,outname));
-    this.clearPatch();
 };
 
 //Note: This function is no longer used anywhere
 ModManager.copyAssets = function() {
-    var input = this._currPatch.slice(0,-5); //shave off "/data"
+    var input = path.join(this._path,this._patchesFolder,this._currPatch); //shave off "/data"
     if (fs.existsSync(path.join(input, 'assets'))) {
         for (i in this._tagList) {
             var tag = this._tagList[i];
@@ -323,10 +357,14 @@ ModManager._currentEncryptionKeys = function(name) {
     var currentAudioEncryptionKey = $dataSystem.hasEncryptedAudio ? currentEncryptionKey : null;
     const systemDataFile = path.join(this._path,this._patchesFolder, name, 'data','System.json');
     if (fs.existsSync(systemDataFile)) {
-        const modSystem = JSON.parse(fs.readFileSync(systemDataFile, {encoding: 'utf8'}));
-        currentEncryptionKey = modSystem['encryptionKey'] ? modSystem['encryptionKey'].split(/(.{2})/).filter(Boolean) : null;
-        var currentImEncryptionKey = modSystem['hasEncryptedImages'] ? currentEncryptionKey : null;
-        var currentAudioEncryptionKey = modSystem['hasEncryptedAudio'] ? currentEncryptionKey : null;
+        //Patch System.json to see if the modded files change whether images/audio have been encrypted, or changed what the key is
+        let baseSystem = JSON.parse(fs.readFileSync(path.join('data','System.json'), {encoding: 'utf8'}));
+        let modSystem = JSON.parse(decodeURIComponent(fs.readFileSync(systemDataFile, {encoding: 'utf8'})));
+        this.patchObj(baseSystem, modSystem);
+        //A little misleading - after patchObj, baseSystem represents the patched dataSystem object
+        currentEncryptionKey = baseSystem['encryptionKey'] ? baseSystem['encryptionKey'].split(/(.{2})/).filter(Boolean) : null;
+        var currentImEncryptionKey = baseSystem['hasEncryptedImages'] ? currentEncryptionKey : null;
+        var currentAudioEncryptionKey = baseSystem['hasEncryptedAudio'] ? currentEncryptionKey : null;
     }
 
     return [currentImEncryptionKey, currentAudioEncryptionKey];
@@ -365,18 +403,19 @@ ModManager.loadEncryptionList = function(patchName) {
     if (!patchName) return {};
     const listFile = path.join(this._path, this._installsFolder, patchName, this._encryptionListFile);
     if (!fs.existsSync(listFile)) return {};
-    const encryptionList = fs.readFileSync(listFile, {encoding: 'utf8'});
+    const encryptionList = JSON.parse(fs.readFileSync(listFile, {encoding: 'utf8'}));
     return encryptionList;
 }
 
 ModManager._applyPatch = function(name) {
-    var currentEncryptionKeys = this._currentEncryptionKeys(name);
+    let currentEncryptionKeys = this._currentEncryptionKeys(name);
 
+    let self = this;
     //Patch relevant files, copy over new or modified images
-    function filePatchRecurse(parentPath="") {
+    let filePatchRecurse = function(parentPath="") {
         var files = [];
         //path to base files/temp directory
-        const src = path.join(this._path, this._tempFolder, parentPath);
+        const tempSrc = path.join(this._path, this._tempFolder, parentPath);
         //path to diffs and mod assets from patch
         const curr = path.join(this._path,this._patchesFolder, name, parentPath);
 
@@ -387,45 +426,49 @@ ModManager._applyPatch = function(name) {
         if (fs.existsSync(curr)) {
             files = fs.readdirSync(curr);
             files.forEach(function(file, index) {
-                if (fs.lstatSync(file).isDirectory()) {
+                if (fs.existsSync(path.join(parentPath, file)) && fs.lstatSync(path.join(parentPath, file)).isDirectory()) {
                     filePatchRecurse(path.join(parentPath, file));
                 } else {
-                    const patchFile = path.join(src, file);
-                    const targetFile = path.join(this._path, this._patchesFolder, name, parentPath, file);
+                    const targetFile = path.join(tempSrc, file);
+                    const baseFile = path.join(/*path.dirname(process.mainModule.filename),*/ parentPath, file);
+                    const patchFile = path.join(curr, file);
+
                     //If the source/base install has a corresponding file, treat it as a patch
-                    if (fs.existsSync(path.join(src, file))) {
+                    if (fs.existsSync(baseFile)) {
+                        AutoDiff.createReqDirectories(targetFile);
                         //JSON data files have their own diff format
                         if (file.match(/\.json$/i)) {
-                            if (!this.patchJSON(targetFile, patchFile)) {
+                            if (!this.patchJSON(targetFile, baseFile, patchFile)) {
                                 /* If patching fails (improperly formatted), it likely means
                                  * that multiple patches tried to add a file named patchFile that did
                                  * not exist originally, so we copy over the one from the latest patch
                                  * to be applied */
+
                                 fs.writeFileSync(targetFile, fs.readFileSync(patchFile));
                             }
 
                         //Copy new image/audio/asset over
-                        } else if (file.match(/\.[png|mp4|ogg|rpgmvp|rpgmvo|rpgmvm]$/i)) {
-                            fs.writeFileSync(patchDest, fs.readFileSync(newfile));
+                        } else if (file.match(/\.(png|mp4|ogg|rpgmvp|rpgmvo|rpgmvm)$/i)) {
+                            fs.writeFileSync(targetFile, fs.readFileSync(patchfile));
                             //Map changed assets to different encryption keys; ("no encryption key" may be
                             //  a "new" encryption key; thus we do this even if the extension claims the file
                             //  is not encrypted)
-                            if (file.match(/\.[png|rpgmvp]$/i)) {
+                            if (file.match(/\.(png|rpgmvp)$/i)) {
                                 this.addImageToEncryptList(path.join(parentPath, file), name, currentEncryptionKeys);
-                            } else if (file.match(/\.[ogg|rpgmvo]$/i)) {
+                            } else if (file.match(/\.(ogg|rpgmvo)$/i)) {
                                 this.addAudioToEncryptList(path.join(parentPath, file), name, currentEncryptionKeys);
                             }
 
                         //Pure-text files use line-based diffing/patching
-                        } else if (file.match(/\.[txt|csv]$/i) || file.match(/\.js$/i)) {
+                        } else if (file.match(/\.(txt|csv)$/i) || file.match(/\.js$/i)) {
                             if (file == this._convertFilename) {
                                 /* We expect different patches to all come with a conversion file that
                                  * provides a save conversion function override; we do not want to patch
                                  * one to look like another, we want to add/compile the logic of all of them,
                                  * so we append the overrides together subsequently in one file. */
-                                this.appendContents(targetFile, patchFile);
+                                this.appendContents(targetFile, baseFile, patchFile);
                             } else {
-                                if (!this.patchText(targetFile, patchFile)) {
+                                if (!this.patchText(targetFile, baseFile, patchFile)) {
                                     /* If patching fails (improperly formatted), it likely means
                                      * that multiple patches tried to add a file named patchFile that did
                                      * not exist originally, so we copy over the one from the latest patch
@@ -437,38 +480,63 @@ ModManager._applyPatch = function(name) {
 
                     //If file is exclusive to the mod/patch, copy it over
                     } else {
-                        fs.writeFileSync(patchDest, fs.readFileSync(newfile));
+                        AutoDiff.createReqDirectories(targetFile);
+                        fs.writeFileSync(targetFile, fs.readFileSync(patchFile));
+                        //Map changed assets to different encryption keys; ("no encryption key" may be
+                        //  a "new" encryption key; thus we do this even if the extension claims the file
+                        //  is not encrypted)
+                        if (file.match(/\.(png|rpgmvp)$/i)) {
+                            this.addImageToEncryptList(path.join(parentPath, file), name, currentEncryptionKeys);
+                        } else if (file.match(/\.(ogg|rpgmvo)$/i)) {
+                            this.addAudioToEncryptList(path.join(parentPath, file), name, currentEncryptionKeys);
+                        }
                     }
                 }
-            });
+            }.bind(this));
         }
-    }
+    }.bind(self);
     //Perform diff from roots
-    filePatchRecurse.bind(this);
     filePatchRecurse();
 
     //Build encryption key list
 };
 
 /* Returns false if it fails to patch (patchFile not formatted correctly), true otherwise */
-ModManager.patchText = function(sourceFile, patchFile) {
+ModManager.patchText = function(targetFile, sourceFile, patchFile) {
     var source = fs.readFileSync(sourceFile, {encoding: 'utf8'}).split(/[\r\n]+/);
     try {
-        const patchDiff = JSON.stringify(fs.readFileSync(patchFile, {encoding: 'utf8'}));
+        const patchDiff = JSON.parse(fs.readFileSync(patchFile, {encoding: 'utf8'}));
         //Patch the list of lines
-        if (!this.patchLine(source, patchDiff)) {
-            return false;
+        //For JS files, we have to do some prep work for function guards/sanitization.
+        //  We want to avoid doing that level of work for unnecessary files.
+        if (sourceFile.match(/\.js$/i)) {
+            if (!this.patchLineJs(source, patchDiff)) {
+                return false;
+            }
+        } else {
+            if (!this.patchLine(source, patchDiff)) {
+                return false;
+            }
         }
-        //Overwrite file with patched contents
-        fs.writeFileSync(sourceFile, source.join('\n'), {encoding: 'utf8'})
-        return true;
     } catch (except) {
         return false;
     }
+    let fileText = source.join('\n');
+    /* This is a whole mess - read the comment around the
+     * applyFunctionSafeties function definition to better
+     * understand why this is here. */
+    if (sourceFile.match(/\.js$/i)) {
+        this.applyFunctionSafeties(fileText, this._currPatch);
+    }
+    //Overwrite file with patched contents
+    fs.writeFileSync(targetFile, fileText, {encoding: 'utf8'})
+    return true;
+    
 }
 
-ModManager.appendContents = function(sourceFile, newFile) {
-    fs.appendFileSync(sourceFile, fs.readFileSync(newFile, {encoding: 'utf8'}));
+ModManager.appendContents = function(tempFile, sourceFile, newFile) {
+    fs.writeFileSync(tempFile, fs.readFileSync(sourceFile, {encoding: 'utf8'}));
+    fs.appendFileSync(tempFile, fs.readFileSync(newFile, {encoding: 'utf8'}));
 }
 
 ModManager.patchLine = function(source, patchDiff) {
@@ -493,7 +561,8 @@ ModManager.patchLine = function(source, patchDiff) {
         }
     });
     //Apply the diff modifications line by line...
-    for (var lineSpec of patchDiff) {
+    for (let i = 0; i < patchDiff.length; i++) {
+        let lineSpec = patchDiff[i];
         //Deletions all come before all additions, due to
         //  the sort. So we can delete lines based on index in original list
         //  Sort also guarantees we delete highest-index entries first, so
@@ -516,102 +585,102 @@ ModManager.patchLine = function(source, patchDiff) {
     return true;
 }
 
-ModManager.patchJSON = function(sourceFile, patchFile) {
+ModManager.patchLineJs = function(source, patchDiff) {
+    if (!Array.isArray(patchDiff) || patchDiff.length == 0 || !Array.isArray(patchDiff[0])) {
+        return false;
+    }
+
+    this._modifiedLines = [];
+    let deleteIndices = [];
+    let addIndices = [];
+
+    patchDiff.sort((a, b) => {
+        //If both additions or both deletes, sort by line number/order
+        if (a[0] == b[0]) {
+            //If we're looking at deletions, sort in reverse - will
+            //  become clear why later/below
+            if (a[0] == '-') {
+                return b[1] - a[1]
+            }
+            return a[1] - b[1];
+        //If not equal, we want '+' to be "higher" and come later
+        } else if (a[0] == '+') {
+            return 1;
+        } else {
+            return -1;
+        }
+    });
+    //Apply the diff modifications line by line...
+    for (let i = 0; i < patchDiff.length; i++) {
+        let lineSpec = patchDiff[i];
+        //Deletions all come before all additions, due to
+        //  the sort. So we can delete lines based on index in original list
+        //  Sort also guarantees we delete highest-index entries first, so
+        //  deleting in order does not change the index of the next line to
+        //  be deleted.
+        if (lineSpec[0] == '-') {
+            source.splice(lineSpec[1],1);
+            //Make note of the current-patched-file line number where a delete occurs;
+            //  Because we work in reverse-order, subsequent deletes will cause previously
+            //  noted indices to need to be decremented
+            deleteIndices.forEach(function(deleteIndex, j, dI) { dI[j] = dI[j] - 1; } )
+            deleteIndices.push(lineSpec[1]);
+        }
+        //Now we're ready to do all additions, and they
+        //  are sorted in ascending order. The line numbers attached to
+        //  additions are the line number of the line in in the modded
+        //  file that the patch is based on (which already has the deleted
+        //  lines deleted); if we insert them in ascending order, they simply
+        //  each get placed where they expect to be.
+        if (lineSpec[0] == '+') {
+            source.splice(lineSpec[1],0,lineSpec[2]);
+            //Make note of the patched-file line number where an add occurs;
+            //  increment any noted delete indices that happen after the add, to reflect
+            //  the corresponding index inour current patched file
+            addIndices.push(lineSpec[1]);
+            deleteIndices.forEach(function(deleteIndex, j, dI) { if (dI[j] > lineSpec[1]) { dI[j] = dI[j] + 1; } })
+        }
+    }
+
+    const modified = ((deleteIndices.concat(addIndices)).sort());
+    let stringIndex = 0;
+    for (let i = 0; i < source.length; i++) {
+        let line = source[i];
+        if (modified.indexOf(i) >= 0) {
+            this._modifiedLines.push([stringIndex, stringIndex+line.length]);
+        }
+        stringIndex += line.length + 1; //have to add 1 for the newlines that were removed by split
+    }
+    return true;
+}
+
+ModManager.patchJSON = function(targetFile, sourceFile, patchFile) {
     try {
-        var source = JSON.parse(fs.readFileSync(sourceFile, {encoding: 'utf8'}));
-        const patchDiff = JSON.parse(fs.readFileSync(patchFile, {encoding: 'utf8'}));
+        let source = JSON.parse(fs.readFileSync(sourceFile, {encoding: 'utf8'}));
+        const patchDiff = JSON.parse((fs.readFileSync(patchFile, {encoding: 'utf8'})));
+
         //Patch the JSON
-        this.patchObj(source, patchDiff);
+        if (!this.patchObj(source, patchDiff)) {
+            return false;
+        }
         //Overwrite file with patched contents
-        fs.writeFileSync(sourceFile, source, {encoding: 'utf8'});
+        fs.writeFileSync(targetFile, JSON.stringify(source), {encoding: 'utf8'});
         return true;
     } catch (except) {
+        //console.log(except);
         return false;
     }
 }
 
-// I have no idea why I wrote obj.splice.apply(obj, [args])
-// instead of obj.splice(args); perhaps there was a good reason
 ModManager.patchObj = function(source, patchDiff) {
-    var keys;
-    if (Array.isArray(source)) {
-        let i = 0;
-        //The keys to an array are just the indices
-        keys = source.map(x => {i+=1; return (i-1);});
-    } else {
-        keys = Object.getOwnPropertyNames(source).sort();
+    let source_list = AutoDiff.buildJsonList(source);
+    if (!this.patchLine(source_list, patchDiff)) {
+        return false;
     }
-    
-    var buildIndex = 0;
-    //adding keys to a dictionary does not require any consideration of "indices";
-    //  in fact, we need to ignore indices for the case where source has no
-    //  keys, and will not iterate after this, but we with to add keys to it
-    if (!Array.isArray(source) && !Array.isArray(patchDiff)) {
-        const addKeys = Object.getOwnPropertyNames(patchDiff['+']);
-        for (key of addKeys) {
-            source[key] = AutoDiff.cloneObj(patchDiff['+'][key]);
-        }
-    //Similarly, do have to manually include corner case where source is an
-    //  empty array (will not have anything to iterate through, below) that requires
-    //  additions
-    } else if (Array.isArray(source) && Array.isArray(patchDiff)) {
-        if (source.length == 0 && patchDiff['+'][0]) {
-            //Do generic "add" logic for arrays, at index 0
-            source.splice.apply(source, [buildIndex, 0].concat(AutoDiff.cloneObj(patchDiff['+'][i])));
-            buildIndex += patchDiff['+'].length;
-        } else { //TODO - NEW, SHOULD BE TESTED AND SCRUTINIZED
-            this.patchLine(source, patchDiff);
-            return;
-        }
-    }
-    //Apply JSON diff/patch
-    for (var i = 0; i < keys.length; i++) {
-        var buildIndexUpdated = false;
-        if (i in patchDiff['+']) {
-            if (Array.isArray(source)) {
-                //The reason we call obj.splice.apply(obj... args) instead of obj.splice(args) is because
-                //  we want to insert a subsequence of values - an array itself. Thus if we pass an array
-                //  to splice, it will insert the array instead of insterting all values in the array in order
-                //  eg: "[1, [2, 3], 4]" instead of "[1, 2, 3, 4]". By concatenating the subsequence we want
-                //  to add with the parameter list that goes to apply, we transition the list into a list of
-                //  splice values.
-                //Thankfully, splice adheres to our "before the index" standard
-                source.splice.apply(source, [buildIndex, 0].concat(AutoDiff.cloneObj(patchDiff['+'][i])));
-                buildIndex += patchDiff['+'].length;
-            }
-            buildIndexUpdated = true;
-        }
-        //Note: we can modify an element AND have an insert at i, but insert first/before
-        if (patchDiff['m'][i] != null) {
-            const modifyDiff = patchDiff['m'][i];
-            //Recurse on modification patch
-            if (AutoDiff.isObject(modifyDiff)) {
-                if (!Array.isArray(source)) {
-                    //If it was an object, key is the "i'th" key when sorted
-                    this.patchObj(source[keys[i]], modifyDiff);
-                } else {
-                    this.patchObj(source[i], modifyDiff);
-                }
-            //Or simply set the value to the new value
-            } else {
-                source[i] = modifyDiff;
-            }
-            buildIndex += 1;
-            buildIndexUpdated = true;
-        //Note: We SHOULD never have a modify and delete on the same index
-        } else if (i in patchDiff['-']) {
-            //Eliminate the current/next element
-            source.splice(buildIndex, 1);
-            //Essentially, tell it not to increment the buildIndex, since
-            // the "processed" element was deleted, and our index does not have
-            // any net movement/increase.
-            buildIndexUpdated = true;
-        }
-        //If we didn't have any adds, deletes, or modifies, just move on
-        if (!buildIndexUpdated) {
-            buildIndex += 1;
-        }
-    }
+    //Make sure that the input JSON object ends up as a patched JSON object by the end;
+    // We want this to be an in-place patch function
+    Object.assign(source, JSON.parse(source_list.join(' ')));
+    return true;
 };
 
 ModManager._getJSON = function(dir, dest) {
@@ -894,14 +963,12 @@ ModManager.guessDefaultFromType = function(type) {
 //When we exit to title, remove scripts in case we alter
 //the configuration and have to load them anew
 ModManager.clearScripts = function() {
-    var path = require('path');
     if (this._gameLoaded) {
-        for (var script in this._scripts) {
-            console.log(script);
-                if (!this._scripts[script]) continue;
-            var source = path.join(this._path,'scripts',script);
-            for (var j in document.body.childNodes) {
-                var node = document.body.childNodes[j];
+        for (let script in this._scripts) {
+            if (!this._scripts[script]) continue;
+            let source = path.join(this._path,'scripts',script);
+            for (let j in document.body.childNodes) {
+                let node = document.body.childNodes[j];
                 if (node._url == source) {
                     document.body.removeChild(node);
                     break;
@@ -913,21 +980,21 @@ ModManager.clearScripts = function() {
 }
 ModManager.addScripts = function() {
     if (!this._gameLoaded) {
-        var path = require('path');
-        for (var file in this._scripts) {
+        let path = require('path');
+        for (let file in this._scripts) {
             //if the script is active/enabled
             if (this._scripts[file]) {
                 //convert all values to strings
-                var params = {};
-                for (var p in this._parameters[file]) {
+                let params = {};
+                for (let p in this._parameters[file]) {
                     params[p] = String(this._parameters[file][p]._realValue);
                 }
                 //inform PluginManager
-                var name = ((file.split(/[\\|\/]/).pop()).split('.'))[0];
+                const name = ((file.split(/[\\|\/]/).pop()).split('.'))[0];
                 PluginManager.setParameters(name, params);
                 //add script code to the game
-                var url = path.join(this._path,'scripts',file);
-                var script = document.createElement('script');
+                const url = path.join(this._path,'scripts',file);
+                let script = document.createElement('script');
                 script.type = 'text/javascript';
                 script.src = url;
                 script.async = false;
@@ -984,6 +1051,39 @@ ModManager.loadDataFile = function(source, name) {
     xhr.send();
 };
 
+//TODO : uses "new" ._version, which is location agnostic
+ModManager.loadPlugins = function() {
+    /* Don't load plugins multiple times */
+    if (this._patchPlugins.indexOf(DataManager._version) > 0) return;
+    const pluginPath = path.join(this._path, this._installsFolder, DataManager._version, "plugins.js");
+    if (fs.existsSync(pluginPath)) {
+        let file = fs.readFileSync(pluginPath,{encoding: 'utf8'});
+        let anchor = "var $plugins =";
+        let pluginVarFind = RegExp(anchor);
+        let plugs;
+        file.replace(pluginVarFind, function(match, offset, string) {
+            let i = offset;
+            while (string[i] != '{') {
+                i += 1;
+            }
+            let j = i;
+            let bracketCount = 1;
+            while (bracketCount > 0) {
+                if (string[j] == '{') {
+                    bracketCount += 1;
+                } else if (string[j] == '}') {
+                    bracketCount -= 1;
+                }
+                j += 1;
+            }
+            plugs = JSON.parse(string.slice(i, j));
+            return "";
+        })
+        //TODO: check that this works if the pluginlist contains files from the original that aren't modified AKA aren't in the patch's js folder
+        PluginManager.setup(plugs);
+    }
+}
+
 ModManager._onLoad = function(database) {
     this._awaiting[database]--;
     if (this._awaiting[database] == 0) {
@@ -1038,31 +1138,338 @@ Scene_Title.prototype.commandModManage = function() {
 
 //-----------------------------------------------------------------------------
 
-var DMcreateGameObjsWEncryptList = DataManager.createGameObjects;
-DataManager.createGameObjects = function() {
-    DMcreateGameObjsWEncryptList.call(this);
-    this.loadEncryptionList();
+/* Receives a js file as a string, and modifies it as follows:
+ * Removes redundant (unchanged) function definitions
+ * For function overwrites or new functions, it aliases the function if relevant and wraps the function body,
+ *   placing the entire function definition under the constraint "if (DataManager._version == patchname) {"
+ *   and, if the js file is overwriting a function, puts in an "else" that calls the original (aliased) function
+ * Note: this function is already very heavy in terms of processing. To keep it reasonable, we delete
+ *   redundant function definitions based on what functions are already present in the running instance.
+ *   This may seem somewhat unnerving, as anything that is loaded at any point by RPG Maker will remain
+ *   until the process terminates. Thus, in theory, if you load into some modded instances and the game
+ *   loads some functions unique to that mod, and then try to apply a patch, it could change the behavior
+ *   of this function. In practice, though, you can convince yourself that this will never result in a
+ *   problematic difference. Since those new functions will have the special "if" wrapper inserted into
+ *   their body, it is very unlikely that the function body will match the one in the patch. And if it does -
+ *   well, since patches must have different names, the "if" condition would never have triggered anyway in
+ *   the patch that is being made/the latter patch, so the loss is trivial.
+ */
+ModManager.applyFunctionSafeties = function(file, patchname) {
+
+    /* NOTE: This function assumes all scripts are well-formed, it has no safeguards
+     * that will prevent it from running past the end of the string. It also assumes
+     * that, for the most part, functions are declared in the standard syntax used
+     * by the base RPG Maker MV library. */
+
+     /* topline - the line that declares/sets the function, up until the first opening curly bracket
+      * bodyText - the text of the function definition
+      * hasElse - whether we should add an "else" to the sanitizing wrapper to invoke the normal version
+      *    of the function
+      * funName - name of the function, used to create an intuitive alias variable
+      * args - all text, including commas etc, between (not including) the parentheses for the functions
+      *    parameters/arguments */
+    const self = this;
+
+    function wrapScriptBody(topline, bodyText, hasElse, funName, args) {
+        const aliasName = "MVM_script_alias_"+funName.replace(/\./g, '_');
+        let preface = "";
+        let if_add = "if (DataManager._version == "+JSON.stringify(patchname)+") {";
+        let if_close = "}";
+        if (hasElse) {
+            preface = "let "+aliasName+" = "+funName+";";
+            if_close += " else { "+aliasName+".call(this"+((args == "") ? "" : (", "+args))+"); }\n";
+        }
+        return (preface+topline+if_add+bodyText+if_close+"}\n")
+    }
+
+    let toDelete = [];
+    /* lowIndex is included in the deleted section, highIndex is not */
+    function deleteMidsection() {
+        /* order by start of match - which function definition appeared first */
+        toDelete.sort(function(a, b) { return a[0] - b[0] });
+        /* skip any matches that are inside the scope of a previously discovered function */
+        let v = 0;
+        while (v < toDelete.length-1) {
+            let offset = toDelete[v+1][0];
+            if (toDelete[v][0] <= offset && offset <= toDelete[v][1]) {
+                toDelete.splice(v+1, 1);
+            } else {
+                v++;
+            }
+        }
+        for (let v = toDelete.length-1; v >= 0; v--) {
+            file = file.slice(0, toDelete[v][0])+toDelete[v][2]+file.slice(toDelete[v][1]+1);
+        }
+        toDelete = [];
+    }
+
+    /* reduce all spaces for consistency, to make comparisons 
+     *   against base function bodies more reliable (ie, normalize
+     *   space characters) */
+    file = file.replace(/(?:[\t ])+/g, ' ');
+    file = file.replace(/(?:[\n\r])+/g, '\n');
+    /* delete comments to save space as well */
+    /* Have to delete the multi-line style first; if we delete a line
+     *   that starts a multi-line comment start or end that happens to
+     *   have a '//', it will mess things out. The reverse, meanwhile,
+     *   cannot be problematic. */
+    file = file.replace(/\/\*(.?\s?)*?\*\//g, '');
+    file = file.replace(/\/\/(.*)/g, '');
+
+
+    /* eg: function DataManager() { ... } */
+    const define = /(?:\s)*function(?:\s)*(?<funName>[a-zA-Z0-9_\$].*?)(?:\s)*\(/g;
+    file.replace(define, function(match, funName, offset, string) {
+        let i;
+        let topline = match;
+
+        /* See if the function is already defined */
+        let objPath = funName.split('.');
+        let nav = window;
+        for (i = 0; (i < objPath.length) && (nav != null); i++) {
+            nav = nav[objPath[i]];
+        }
+
+        /* build args list */
+        args = "";
+        let parenOpenCount = 1;
+        /* index after the parenthesis that opens the argument list */
+        i = offset+match.length;
+        while (parenOpenCount > 0) {
+            args += string[i];
+            if (string[i] == ')') {
+                parenOpenCount -= 1;
+            } else if (string[i] == '(') {
+                parenOpenCount += 1;
+            } i += 1;
+        }
+
+        topline += args;
+        while (string[i] != '{') {
+            if (string[i] != '\n') { topline += string[i] };
+            i += 1;
+        }
+        topline += '{';
+        i += 1;
+
+        /* i = index after the curly bracket that opens the function body */
+        let bodyText = "";
+        parenOpenCount = 1;
+        while (parenOpenCount > 0) {
+            bodyText += string[i];
+            if (string[i] == '}') {
+                parenOpenCount -= 1;
+            } else if (string[i] == '{') {
+                parenOpenCount += 1;
+            } i += 1;
+        }
+        
+        /* Note: at this point, i is the index of the curly brace that closes the function */
+
+        /* The function has been defined; we must:
+         *  1) Wrap it, with else, because it changes an existing function that
+         *    we only want to be changed while the patched instance is active
+         *  2) Delete it, because it doesn't chane anything and is redundant 
+         * Else, if it has not been defined:
+         *  3) Wrap it, without else, because it's a new function exclusive to
+         *    the new patch instance, just in case*/
+        bodyText = bodyText.slice(0,-1);
+        if (nav && typeof nav === 'function') {
+            let wasModified = false;
+            self._modifiedLines.forEach(function(range) {
+                const low = range[0]; const high = range[1];
+                if ((offset <= low && low < i) || (offset < high && high <= i)) {
+                    wasModified = true;
+                }
+            } )
+            if (wasModified) {
+                /* the function is a changed version; alias it to only use the altered logic while
+                 * the relevant patch is active. */
+                toDelete.push([offset, i, wrapScriptBody(topline, bodyText, true, funName, args)]);
+            } else {
+                /* delete the redundant function */
+                toDelete.push([offset, i, ""]);
+            }
+        } else {
+            /* the function is new to this script file, and therefore cannot be aliased */
+            toDelete.push([offset, i, wrapScriptBody(topline, bodyText, false, funName, args)]);
+        }
+
+        /* Otherwise no replacement */
+        return string;
+    });
+    //deleteMidsection();
+
+    /* eg: function DataManager.loadDatafile = function(file) { ... } */
+    /* eg: function DataManager.loadDatafile = (file) => { ... } */
+    const assignment = /(?:\s)*(?:let|const|var)?(?:\s)*(?<varName>[a-zA-Z0-9_\$].*?)(?:\s)*=(?:\s)*(?:function(?:\s)*\((?<argsCase1>.*?(?:,(?:\s)*?(?:.*?))*?)\)(?:\s)*\{|\(?(?<argsCase2>.*?(?:,(?:\s)*?(?:.*?))*?)\)?(?:\s)*=>(?:\s)*\{)/g;
+    file.replace(assignment, function(match, varName, argsCase1, argsCase2, offset, string) {
+        let args = argsCase1 || argsCase2 || "";
+        let i;
+        let topline = match;
+
+        /* See if the function is already defined */
+        let objPath = varName.split('.');
+        let nav = window;
+        for (i = 0; (i < objPath.length) && (nav != null); i++) {
+            nav = nav[objPath[i]];
+        }
+
+        /* i = index of the curly bracket that opens the function body */
+        i = offset+match.length;
+
+        let bodyText = "";
+        let parenOpenCount = 1;
+        while (parenOpenCount > 0) {
+            bodyText += string[i];
+            if (string[i] == '}') {
+                parenOpenCount -= 1;
+            } else if (string[i] == '{') {
+                parenOpenCount += 1;
+            } i += 1;
+        }
+        
+        /* Note: at this point, i is the index after the curly brace that closes the function */
+
+        /* The function has been defined; we must:
+         *  1) Wrap it, with else, because it changes an existing function that
+         *    we only want to be changed while the patched instance is active
+         *  2) Delete it, because it doesn't chane anything and is redundant 
+         * Else, if it has not been defined:
+         *  3) Wrap it, without else, because it's a new function exclusive to
+         *    the new patch instance, just in case*/
+        bodyText = bodyText.slice(0,-1)
+        if (nav && typeof nav === 'function') {
+            let wasModified = false;
+            self._modifiedLines.forEach(function(range) {
+                const low = range[0]; const high = range[1];
+                if ((offset <= low && low < i) || (offset < high && high <= i)) {
+                    wasModified = true;
+                }
+            } )
+            if (wasModified) {
+                /* the function is a changed version; alias it to only use the altered logic while
+                 * the relevant patch is active. */
+                toDelete.push([offset, i, wrapScriptBody(topline, bodyText, true, varName, args)]);
+            } else {
+                /* delete the redundant function */
+                toDelete.push([offset, i, ""]);
+            }
+        } else {
+            /* the function is new to this script file, and therefore cannot be aliased */
+            toDelete.push([offset, i, wrapScriptBody(topline, bodyText, false, varName, args)]);
+        }
+
+        /* Otherwise no replacement */
+        return string;
+    });
+    deleteMidsection();
+
+    function getNameAndArgs(funString) {
+        let match = funString.match(define);
+        if (match) {
+            let offset = match.index;
+            /* build args list */
+            args = "";
+            let parenOpenCount = 1;
+            /* index after the parenthesis that opens the argument list */
+            let j = offset+match[0].length;
+            while (parenOpenCount > 0) {
+                args += string[j];
+                if (funString[j] == ')') {
+                    parenOpenCount -= 1;
+                } else if (funString[j] == '(') {
+                    parenOpenCount += 1;
+                } j += 1;
+            }
+            return [match[1],args.split('.')];
+        }
+
+        match = funString.match(assignment);
+        if (match) {
+            args = match[2] || match[3];
+            return [match[1],args.split('.')];
+        }
+        return null;
+    }
+
+if (false) {
+    /* eg: DataManager.loadDatafile = _alias_load_database_when_ready; */
+    regex = /(?:\s)*(?<varName>[a-zA-Z0-9_\$].*?)(?:\s)*=(?:\s)*(?<funVal>[a-zA-Z0-9_\$].*?)(?:\s)*[\n\r;])/;
+    file = file.replace(regex, function(match, varName, funVal, offset, string) {
+        /* NOTE - this doesn't check what the function is being set to, because it cannot, because if it
+         * is a function, we wouldn't be able to easily tell, as it could be a function defined in some
+         * modded js file that we have not loaded yet. It does, however, feel like a safe assumption to
+         * assume that any existing function, if set to another value, will be set to a function, and not
+         * a primitive. There should be no reason to redefine a function symbol to a primitive. */
+
+        /* See if the function being set is already defined */
+        let objPath = varName.split('.');
+        let nav = window;
+        for (let i = 0; (i < objPath.length) && (nav != null); i++) {
+            nav = nav[objPath[i]];
+        }
+
+        let origArgCount = 0;
+        if (nav && typeof nav == 'function') {
+            /* There is no function body to use as a base for sanitzation here, we
+             * have to make it ourselves. */
+
+            let result = getNameAndArgs(String(nav));
+            if (result) {
+                const aliasName = "MVM_script_alias_"+funName;
+                let replaceString = "let "+aliasName+" = "+varName+";\n "; 
+                replaceString += varName + " = function(...args) {\n";
+                replaceString += "if (DataManager._version = "+JSON.stringify(patchname)+") {\n";
+                replaceString += funVal+".call(this, ...args);\n";
+                replaceString += "} else {\n";
+                replaceString += aliasName+".call(this, ...args);\n";
+                replaceString += "}\n";
+                return replaceString;
+            }
+        }
+
+        /* Otherwise no replacement */
+        return string;
+    });
+}
+    return file;
 }
 
-//TODO - change all this to work with some master mapping
-//  of encryption flags+keys as needed to relevant assets
-var DMloadGameWScripts = DataManager.loadGame;
-DataManager.loadGame = function(savefileId) {
-    var val = DMloadGameWScripts.call(this, savefileId);
-    //Save original encryption key;
-    //  Only do the first time - otherwise a "load" from a modded save would mess it up
-    if (!Decrypter._baseEncryptionKey) {
-        if ($dataSystem.encryptionKey) {
-            Decrypter._baseEncryptionKey = $dataSystem.encryptionKey.split(/(.{2})/).filter(Boolean);
+//let MVMM_ScLoad_onSavefileOk = Scene_Load.prototype.onSavefileOk;
+Scene_Load.prototype.onSavefileOk = function() {
+    Scene_File.prototype.onSavefileOk.call(this);
+    let prev_version = DataManager._version;
+    const success = DataManager.loadGame(this.savefileId());
+    if (success) {
+        if ((DataManager._version && DataManager._version != "") || (prev_version != DataManager._version)) {
+            let loadPatchDatabases = function() {
+                //Save original encryption key;
+                //  Only do the first time - otherwise a "load" from a modded save would mess it up
+                if (!Decrypter._baseEncryptionKey) {
+                    if ($dataSystem.encryptionKey) {
+                        Decrypter._baseEncryptionKey = $dataSystem.encryptionKey.split(/(.{2})/).filter(Boolean);
+                    }
+                }
+                //Vanilla/base data files loaded at boot, once we start a game, reload them based on
+                //  the patch
+                ModManager.addScripts(); //TODO - should this be here?
+                this._loaded = true;
+                this.onLoadSuccess();
+            }
+            ModManager.quickLoad = true;
+            this._loaded = false;
+            ModManager.queuedFunction = loadPatchDatabases.bind(this);
+
+            ModManager.loadPlugins();
+            //ImageManager.clear(); //TODO: This will fuck up the window 
+            DataManager.loadDatabase();
+        } else {
+            this.onLoadSuccess();
         }
+    } else {
+        this.onLoadFailure();
     }
-    //Vanilla/base data files loaded at boot, once we start a game, reload them based on
-    //  the patch
-    DataManager.loadDatabase();
-    //Flush cache if we're potentially changing versions, ie
-    // where games are pulled from
-    ImageManager.clear(); //TODO: This will fuck up the window 
-    return val;
 };
 
 DataManager.loadEncryptionList = function() {
@@ -1073,8 +1480,8 @@ DataManager.loadEncryptionList = function() {
 // so we can show this during save file list screens
 const DMsaveGameWPath = DataManager.saveGameWithoutRescue;
 DataManager.saveGameWithoutRescue = function(savefileId) {
-    var val = DMsaveGameWPath.call(this, savefileId);
-    var globalInfo = this.loadGlobalInfo();
+    let val = DMsaveGameWPath.call(this, savefileId);
+    let globalInfo = this.loadGlobalInfo();
     globalInfo[savefileId].patch = DataManager._version;
     this.saveGlobalInfo(globalInfo);
     return val;
@@ -1084,7 +1491,7 @@ DataManager.saveGameWithoutRescue = function(savefileId) {
 
 const DMcheckImageIgnoreIfNoEncrypt = Decrypter.checkImgIgnore;
 Decrypter.checkImgIgnore = function(url){
-    if (!DataManager._version) {
+    if (!DataManager._version || DataManager._version == "") {
         return DMcheckImageIgnoreIfNoEncrypt.call(this, url);
     }
     //If this is in the encryption list with a key of "null",
@@ -1100,12 +1507,12 @@ Decrypter.checkImgIgnore = function(url){
 }
 
 Decrypter.readBaseEncryptionkey = function(){
-    return this._baseEncryptionKey;
+    return this._baseEncryptionKey || $dataSystem.encryptionKey.split(/(.{2})/).filter(Boolean);
 };
 
 Decrypter.getEncryptionKey = function(url) {
     DataManager.loadEncryptionList();
-    if (DataManager._version) {
+    if (DataManager._version && DataManager._version != "") {
         if (url in DataManager._encryptionList) {
             return DataManager._encryptionList[url];
         }
@@ -1119,17 +1526,16 @@ Decrypter.getEncryptionKey = function(url) {
 
 const _xml_open_diverted_path = XMLHttpRequest.prototype.open;
 XMLHttpRequest.prototype.open = function(method, url) {
-    if (DataManager._version) {
+    if (DataManager._version && DataManager._version != "") {
         DataManager.loadEncryptionList();
         //inelegant, but have to remove prefix install path if it's already been appended
         //  appropriate encryption key for the asset path
-        url = url.replace(DataManager._version, '')
 
         //really this probably shouldn't exist, should all be covered by the latter (else if) case
         if (url in DataManager._encryptionList) {
-            url = path.join(DataManager._version, url);
-        } else if (fs.existsSync(path.join(DataManager._version, url))) {
-            url = path.join(DataManager._version, url);
+            url = path.join(ModManager._path, ModManager._installsFolder, DataManager._version, url);
+        } else if (fs.existsSync(path.join(ModManager._path, ModManager._installsFolder, DataManager._version, url))) {
+            url = path.join(ModManager._path, ModManager._installsFolder, DataManager._version, url);
         }
     }
     return _xml_open_diverted_path.call(this, method, url);
@@ -1140,13 +1546,13 @@ XMLHttpRequest.prototype.open = function(method, url) {
 
 const _load_normal_bitmap_diverted_path = ImageManager.loadNormalBitmap;
 ImageManager.loadNormalBitmap = function(url, hue) {
-    if (DataManager._version) {
+    if (DataManager._version && DataManager._version != "") {
         DataManager.loadEncryptionList();
         //really this probably shouldn't exist, should all be covered by the latter (else if) case
         if (url in DataManager._encryptionList) {
-            url = path.join(DataManager._version, url);
-        } else if (fs.existsSync(path.join(DataManager._version, url))) {
-            url = path.join(DataManager._version, url);
+            url = path.join(ModManager._path, ModManager._installsFolder, DataManager._version, url);
+        } else if (fs.existsSync(path.join(ModManager._path, ModManager._installsFolder, DataManager._version, url))) {
+            url = path.join(ModManager._path, ModManager._installsFolder, DataManager._version, url);
         }
     }
     return _load_normal_bitmap_diverted_path.call(this, url, hue);
@@ -1154,65 +1560,20 @@ ImageManager.loadNormalBitmap = function(url, hue) {
 
 const _reserve_normal_bitmap_diverted_path = ImageManager.reserveNormalBitmap;
 ImageManager.reserveNormalBitmap = function(url, hue, reservationId){
-    if (DataManager._version) {
+    if (DataManager._version && DataManager._version != "") {
         DataManager.loadEncryptionList();
         //really this probably shouldn't exist, should all be covered by the latter (else if) case
         if (url in DataManager._encryptionList) {
-            url = path.join(DataManager._version, url);
-        } else if (fs.existsSync(path.join(DataManager._version, url))) {
-            url = path.join(DataManager._version, url);
+            url = path.join(ModManager._path, ModManager._installsFolder, DataManager._version, url);
+        } else if (fs.existsSync(path.join(ModManager._path, ModManager._installsFolder, DataManager._version, url))) {
+            url = path.join(ModManager._path, ModManager._installsFolder, DataManager._version, url);
         }
     }
     return _reserve_normal_bitmap_diverted_path.call(this, url, hue, reservationId);
 };
 
-/*
-var _bitmap_request_image_diverted_path = Bitmap.prototype._requestImage;
-Bitmap.prototype._requestImage = function(url){
-    if (DataManager._version) {
-        console.log(url)
-        DataManager.loadEncryptionList();
-        //really this probably shouldn't exist, should all be covered by the latter (else if) case
-        if (url in DataManager._encryptionList) {
-            url = path.join(DataManager._version, url);
-        } else if (fs.existsSync(path.join(DataManager._version, url))) {
-            url = path.join(DataManager._version, url);
-        }
-    }
-    _bitmap_request_image_diverted_path.call(this, url);
-} */
-
-/*
-Decrypter.decryptImg = function(url, bitmap) {
-    console.log(url)
-    url = this.extToEncryptExt(url);
-
-    var requestFile = new XMLHttpRequest();
-    requestFile.open("GET", url, true);
-    requestFile.responseType = "arraybuffer";
-    requestFile.send();
-
-    requestFile.onload = function () {
-        if(this.status < Decrypter._xhrOk) {
-            // var arrayBuffer = Decrypter.decryptArrayBuffer(requestFile.response); //Change
-            var arrayBuffer = Decrypter.decryptArrayBuffer(requestFile.response, url);
-            bitmap._image.src = Decrypter.createBlobUrl(arrayBuffer);
-            bitmap._image.addEventListener('load', bitmap._loadListener = Bitmap.prototype._onLoad.bind(bitmap));
-            bitmap._image.addEventListener('error', bitmap._errorListener = bitmap._loader || Bitmap.prototype._onError.bind(bitmap));
-        }
-    };
-
-    requestFile.onerror = function () {
-        if (bitmap._loader) {
-            bitmap._loader();
-        } else {
-            bitmap._onError();
-        }
-    };
-}; */
-
 Decrypter.decryptHTML5Audio = function(url, bgm, pos) {
-    var requestFile = new XMLHttpRequest();
+    let requestFile = new XMLHttpRequest();
     requestFile.open("GET", url);
     requestFile.responseType = "arraybuffer";
     requestFile.send();
@@ -1220,8 +1581,8 @@ Decrypter.decryptHTML5Audio = function(url, bgm, pos) {
     requestFile.onload = function () {
         if(this.status < Decrypter._xhrOk) {
             /* var arrayBuffer = Decrypter.decryptArrayBuffer(requestFile.response); */ //Change
-            var arrayBuffer = Decrypter.decryptArrayBuffer(requestFile.response, url);
-            var url = Decrypter.createBlobUrl(arrayBuffer);
+            let arrayBuffer = Decrypter.decryptArrayBuffer(requestFile.response, url);
+            let url = Decrypter.createBlobUrl(arrayBuffer);
             AudioManager.createDecryptBuffer(url, bgm, pos);
         }
     };
@@ -1229,7 +1590,7 @@ Decrypter.decryptHTML5Audio = function(url, bgm, pos) {
 
 WebAudio.prototype._load = function(url) {
     if (WebAudio._context) {
-        var xhr = new XMLHttpRequest();
+        let xhr = new XMLHttpRequest();
         if(Decrypter.hasEncryptedAudio) url = Decrypter.extToEncryptExt(url);
         xhr.open('GET', url);
         xhr.responseType = 'arraybuffer';
@@ -1245,7 +1606,7 @@ WebAudio.prototype._load = function(url) {
 
 /* WebAudio.prototype._onXhrLoad = function(xhr) { */ //Change
 WebAudio.prototype._onXhrLoad = function(xhr, url=null) {
-    var array = xhr.response;
+    let array = xhr.response;
     /* if(Decrypter.hasEncryptedAudio) array = Decrypter.decryptArrayBuffer(array); */ //Change
     if(Decrypter.hasEncryptedAudio) array = Decrypter.decryptArrayBuffer(array, url);
     this._readLoopComments(new Uint8Array(array));
@@ -1266,11 +1627,11 @@ WebAudio.prototype._onXhrLoad = function(xhr, url=null) {
 /* Decrypter.decryptArrayBuffer = function(arrayBuffer) { */
 Decrypter.decryptArrayBuffer = function(arrayBuffer, url=null) {
     if (!arrayBuffer) return null;
-    var header = new Uint8Array(arrayBuffer, 0, this._headerlength);
+    let header = new Uint8Array(arrayBuffer, 0, this._headerlength);
 
-    var i;
-    var ref = this.SIGNATURE + this.VER + this.REMAIN;
-    var refBytes = new Uint8Array(16);
+    let i;
+    let ref = this.SIGNATURE + this.VER + this.REMAIN;
+    let refBytes = new Uint8Array(16);
     for (i = 0; i < this._headerlength; i++) {
         refBytes[i] = parseInt("0x" + ref.substr(i * 2, 2), 16);
     }
@@ -1281,10 +1642,10 @@ Decrypter.decryptArrayBuffer = function(arrayBuffer, url=null) {
     }
 
     arrayBuffer = this.cutArrayHeader(arrayBuffer, Decrypter._headerlength);
-    var view = new DataView(arrayBuffer);
+    let view = new DataView(arrayBuffer);
     this._encryptionKey = this.getEncryptionKey(url);/* this.readEncryptionkey(); */ //Change
     if (arrayBuffer) {
-        var byteArray = new Uint8Array(arrayBuffer);
+        let byteArray = new Uint8Array(arrayBuffer);
         for (i = 0; i < this._headerlength; i++) {
             byteArray[i] = byteArray[i] ^ parseInt(Decrypter._encryptionKey[i], 16);
             view.setUint8(i, byteArray[i]);
@@ -1311,9 +1672,6 @@ Window_SavefileList.prototype.drawPartyCharacters = function(info, x, y) {
                 DataManager._backupVersion = DataManager._version;
                 DataManager._version = info.patch;
             } //Will cause it to use save's patch's images, if applicable
-            console.log(data[0])
-            console.log(data[1])
-            console.log(info.patch)
             this.drawCharacter(data[0], data[1], x + i * 48, y);
             if (info.patch) { //Restore version, in case we're in-game
                 DataManager._version = DataManager._backupVersion;
@@ -1345,18 +1703,34 @@ Window_SavefileList.prototype.drawPartyCharacters = function(info, x, y) {
         DataManager._version = DataManager._backupVersion;
     }
 };
-/*
-const _data_manage_reserve_save_images_with_reroute = DataManager.loadSavefileImages;
-DataManager.loadSavefileImages = function(info) {
-    if (info.patch) {
-        this._backupVersion = this._version;
-        this._version = info.patch;
+
+Window_SavefileList.prototype.drawContents = function(info, rect, valid) {
+    let bottom = rect.y + rect.height;
+    if (rect.width >= 420) {
+        this.drawGameTitle(info, rect.x + 192, rect.y, rect.width - 192);
+        if (valid) {
+            this.drawPartyCharacters(info, rect.x + 220, bottom - 4);
+        }
+    } else {
+        let patchText = "";
+        if (info) {
+            if (info.patch && info.patch != "") {
+                patchText = path.basename(info.patch);
+            } else {
+                patchText = ModManager._baseGameText;
+            }
+        }
+        this.drawText(patchText, 0, rect.y+rect.height / 3, rect.width, 'right');
+        if (valid) {
+            this.drawPartyCharacters(info, 24, bottom - 4);
+        }
     }
-    _data_manage_reserve_save_images_with_reroute.call(this, info);
-    if (info.patch) { //Restore version, in case we're in-game
-        this._version = this._backupVersion;
+    let lineHeight = this.lineHeight();
+    let y2 = bottom - lineHeight;
+    if (y2 >= lineHeight) {
+        this.drawPlaytime(info, rect.x, y2, rect.width);
     }
-};*/
+};
 
 //-----------------------------------------------------------------------------
 
@@ -1371,7 +1745,7 @@ Window_Base.prototype.addWindow = function(window) {
 
 var save_ver_make_save_contents = DataManager.makeSaveContents;
 DataManager.makeSaveContents = function() {
-    var contents = save_ver_make_save_contents.call(this);
+    let contents = save_ver_make_save_contents.call(this);
     contents = contents || {};
     contents._patch = this._version;
     return contents;
@@ -1423,7 +1797,6 @@ DataManager.onLoad = function(object) {
 var _alias_modmanage_win_titlecom_make_com_lst = Window_TitleCommand.prototype.makeCommandList;
 Window_TitleCommand.prototype.makeCommandList = function() {
     _alias_modmanage_win_titlecom_make_com_lst.call(this);
-    var fs = require('fs');
     if (fs.existsSync(ModManager._path)) {
         this.addCommand('Mods', 'mod');
     }
@@ -1448,17 +1821,16 @@ Scene_StartGame.prototype.create = function() {
     this.createCommandWindow();
 }
 Scene_StartGame.prototype.createCommandWindow = function() {
-    var fs = require('fs');
-    var path = require('path');
-    var dir = path.join(ModManager._path, ModManager._installsFolder);
-    var installs = (fs.existsSync(dir)) ? fs.readdirSync(dir) : [];
+    let fs = require('fs');
+    let path = require('path');
+    let dir = path.join(ModManager._path, ModManager._installsFolder);
+    let installs = (fs.existsSync(dir)) ? fs.readdirSync(dir) : [];
     installs.splice(0,0,ModManager._baseGameText);
     this._commandWindow = new Window_CommandList(installs, 0, Graphics.boxHeight/2-40);
-    for (var i in installs) {
+    for (let i in installs) {
         if (i > 0) {
-            var version = installs[i];
-            if (!version) version = path.dirname(process.mainModule.filename);
-            else version = path.join(ModManager._path, ModManager._installsFolder, version);
+            let version = installs[i];
+            if (!version) { version = ""; } //default or vanilla game
             //this._commandWindow.addCommand(version, version);
             this._commandWindow.setHandler(installs[i], this.commandStart(version).bind(this));
         } else {
@@ -1477,16 +1849,25 @@ Scene_StartGame.prototype.createBackground = function() {
 
 Scene_StartGame.prototype.commandStart = function(install) {
     return function() {
-        DataManager._version = path.join(ModManager._path, ModManager._installsFolder, install);
+        DataManager._version = install;
         //Vanilla/base data files loaded at boot, once we start a game, reload them based on
         //  the patch
+        let loadPatchDatabases = function() {
+            DataManager.setupNewGame();
+            this._commandWindow.close();
+            this.fadeOutAll();
+            SceneManager.pop(); //returns to Scene_Title, which calls init and would clear DataManager._version
+            ModManager.addScripts();
+            this._loaded = true;
+            SceneManager.goto(Scene_Map);
+        }
+        ModManager.quickLoad = true;
+        this._loaded = false;
+        ModManager.queuedFunction = loadPatchDatabases.bind(this);
+
+        ModManager.loadPlugins();
+
         DataManager.loadDatabase();
-        DataManager.setupNewGame();
-        this._commandWindow.close();
-        this.fadeOutAll();
-        SceneManager.pop(); //returns to Scene_Title, which calls init and would clear DataManager._version
-        ModManager.addScripts();
-        SceneManager.goto(Scene_Map);
     }
 }
 
@@ -1504,7 +1885,6 @@ Scene_ModManage.prototype.constructor = Scene_ModManage;
 
 Scene_ModManage.prototype.initialize = function() {
     Scene_Base.prototype.initialize.call(this);
-    this._patch = {};
 };
 
 Scene_ModManage.prototype.create = function() {
@@ -1639,6 +2019,7 @@ Window_ModTypeCommand.prototype.constructor = Window_ModTypeCommand;
 
 Window_ModTypeCommand.prototype.initialize = function(x, y, createPage = false) {
     cols = (createPage) ? 4 : 3;
+    this._hasCreatePage = createPage;
     this._showCreatePage = createPage;
     Window_Horz2.prototype.initialize.call(this, x, y, {'maxcols': cols});
     this.defaultToFirstOption();
@@ -1648,7 +2029,9 @@ Window_ModTypeCommand.prototype.makeCommandList = function() {
     this.addCommand("Patches",      'patches', this.patchesAvailable());
     this.addCommand("Scripts",      'scripts', this.pluginsAvailable());
     this.addCommand("Convert Save", 'save',    this.savesAvailable());
-    this.addCommand("Create",       'create',  this.createAvailable());
+    if (this._hasCreatePage) {
+        this.addCommand("Create",       'create',  this.createAvailable());
+    }
 
     //provide user advice/inform user
     if (this._list[0].enabled == false) {
@@ -2152,7 +2535,7 @@ Window_ModScriptConfig.prototype.refreshBoxes = function() {
 // Window_ModPatchConfig
 //
 // Collection of Windows together let a user set parameters;
-// Contains a 3xN Window_Selectable, a confirm button, a Window_Textbox for input, and a help window
+// Contains a Window_Selectable, 3 buttons, a confirm window, a Window_Textbox for input, and a help window
 
 function Window_ModPatchConfig() {
     this.initialize.apply(this, arguments);
@@ -2198,16 +2581,17 @@ Window_ModPatchConfig.prototype.doExportConfirm = function() {
     if (fs.existsSync(path.join(ModManager._path, ModManager._installsFolder))) {
         used = fs.readdirSync(path.join(ModManager._path, ModManager._installsFolder));
     }
-    
+
+  //will be called from the textbox it is linked to, so "this" refers to textbox object
+  const name = this._inputText.getMessage();
   var isValidFoldername = function(fname){
     var rg1=/^[^\\/:\*\?"<>\|]+$/; // forbidden characters \ / : * ? " < > |
     var rg2=/((^\.)|(( |\.)$))/; // cannot start with dot (.), cannot end with space or dot
     var rg3=/^(nul|prn|con|aux|lpt[1-9]|com[1-9])(\.|$)/i; // forbidden file names
     result = (fname!=null)&&rg1.test(fname)&&!rg2.test(fname)&&!rg3.test(fname)&&(used.indexOf(fname) < 0)&&(fname.length > 0);
-    //console.log("result:",rg1.test(fname),!rg2.test(fname),!rg3.test(fname),(used.indexOf(fname) < 0), (fname.length > 0),result);
     return result;
   };
-  return isValidFoldername(this._inputText.message);
+  return isValidFoldername(name);
 };
 
 Window_ModPatchConfig.prototype.cancelConfirm = function() {
@@ -2254,6 +2638,7 @@ Window_ModPatchConfig.prototype.doExportFinal = function() {
   //make sure we can save the patch
   if (!this.doExportConfirm()) {
     //if it returns false, it plays buzzer and the textbox should show an error
+    this.setState('input');
     return;
   }
   const patchName = this._inputText.message;
@@ -2270,6 +2655,7 @@ Window_ModPatchConfig.prototype.doExportFinal = function() {
   const patchTxt = path.join(dest, 'patch.txt');
   fs.writeFileSync(patchTxt, JSON.stringify(this._history), {encoding: 'utf8'});
 
+  ModManager.clearPatch();
   this._history = [];
   this._historyWindow.contents.clear();
 
@@ -2279,7 +2665,7 @@ Window_ModPatchConfig.prototype.doExportFinal = function() {
 };
 
 Window_ModPatchConfig.prototype.setupInput = function() {
-    this._inputText.setConstraint(this.doExportConfirm,"Must be a new, valid folder name.");
+    this._inputText.setConstraint(this.doExportConfirm.bind(this),"Must be a new, valid folder name.");
 }
 
 Window_ModPatchConfig.prototype.setupHistory = function() {
@@ -2505,7 +2891,7 @@ Window_ModPatchConfig.prototype.createShadeSprite = function() {
 
 Window_ModPatchConfig.prototype.createInputWindow = function() {
     this._inputText = new Window_Textbox({'x':Graphics.boxWidth/2-120,'y':Graphics.boxHeight/2-20});
-    this._inputText.unlock(['Escape']);
+    this._inputText.unlock(['Escape', 'ok', 'Enter']);
     this._inputText.setSubmitHandler(Window_ModPatchConfig.prototype.doExportFinal,this);
     this.setupInput();
     this.addChild(this._inputText);
@@ -2553,11 +2939,10 @@ Window_ModPatchCreate.prototype.constructor = Window_ModPatchCreate;
 Window_ModPatchCreate.prototype.initialize = function(x, y) {
     Window_Base.prototype.initialize.call(this, x, y, Graphics.boxWidth - x, Graphics.boxHeight - y);
     this._listIndex = 0;
-    this._menuState = [];
-  	this._toggleSelectedColor = '#ffce1f';
-  	this._toggleSelectableColor = '#ffffff';
-  	this._toggleDisabledColor = '#888888';
-    AutoDiff.initializeExecArgs();
+    this._logMessages = [];
+    this._toggleSelectedColor = '#ffce1f';
+    this._toggleSelectableColor = '#ffffff';
+    this._toggleDisabledColor = '#888888';
 
     this.createWindows();
     //setState calls refreshToggles
@@ -2577,62 +2962,47 @@ Window_ModPatchCreate.prototype.createWindows = function() {
     //button to start patch creation
     this.createSubmitButton();
 
-    //checkbox for turning eq optimization assumption on/off
-    this.createEqToggle();
-    //input window for eq optimization minimum consideration size
-    this.createEqMinSizeBox();
-    //input window for eq optimization minimum consideration ratio (%)
-    this.createEqMinRatioBox();
-
-    //checkbox for diff timeout
-    this.createTimeoutToggle();
-    //input window for timeout, in seconds
-    this.createTimeoutInput();
-
-    //input box for number of maximum number of subprocesses to spawn
-    this.createMaxProcessInput();
-
     //this.createProgressBar(); //TODO?
 };
 
+Window_ModPatchCreate.prototype._handleTasks = function() {
+    //Returns true if done with tasks
+    if (AutoDiff.handleTasks()) {
+        this._finishCreatingPatch();
+    }
+}
+
+Window_ModPatchCreate.prototype._finishCreatingPatch = function() {
+    AutoDiffLogger.deRegister();
+    //After finishing a successful patch export... leave the menu?
+    this._cancelHander.call();
+    this._state = 'toggle3';
+}
+
 Window_ModPatchCreate.prototype.update = function() {
+
+    if (this._state == "diffing") {
+        this._handleTasks();
+        return;
+    }
+
     var okTrigger = Input.isTriggered('ok');
     var touchTrigger = TouchInput.isTriggered();
     Window_Base.prototype.update.call(this);
     if (!this.active) return; //TODO: if in progress, wait
 
     if (Input.isTriggered('cancel') || Input.isTriggered('Escape')) {
-    	if (this._state != 'submit') {
-        this._cancelHander.call();
-    	}
+        if (this._state != 'submit') {
+            this._cancelHander.call();
+        }
     }
 
     //Conditions for setting a certain button/input as active when the user clicks that region
     if (touchTrigger) {
         var state = null;
-        if (this._eqToggleWindow.isTouchedInsideFrame()) {
-        	state = 'eqOn';
-        }
-        if (this._eqToggleWindow.get()) {
-        	if (this._eqMinSizeWindow.isTouchedInsideFrame()) {
-        		state = 'eqMinSize';
-        	} else if (this._eqMinRatioWindow.isTouchedInsideFrame()) {
-        		state = 'eqMinRatio';
-        	}
-        }
-        if (this._timeoutOnWindow.isTouchedInsideFrame()) {
-        	state = 'timeoutOn';
-        }
-        if (this._timeoutOnWindow.get()) {
-        	if (this._timeoutInputWindow.isTouchedInsideFrame()) {
-        		state = 'timeoutInput';
-        	}
-        }
 
         if (this._inputText.isTouchedInsideFrame()) {
             state = 'input';
-        } else if (this._maxProcessesWindow.isTouchedInsideFrame()) {
-        		state = 'maxProcesses';
         } else if (this._toggle1Window.isTouchedInsideFrame() && (!this._toggle3Window.get())) {
             state = 'toggle1';
         } else if (this._toggle2Window.isTouchedInsideFrame() && (!this._toggle3Window.get())) {
@@ -2672,22 +3042,12 @@ Window_ModPatchCreate.prototype.update = function() {
                 state = 'toggle3';
             }
         } else if (this._state == 'toggle1') {
-        	  //Go to equivalent section of EQ column
             if (Input.isTriggered('right')) {
                 SoundManager.playCursor();
-                if (this._eqToggleWindow.get()) {
-                	state = 'eqMinSize';
-                } else {
-                	state = 'eqOn';
-                }
-            //Go to equivalent section of Timeout column
+                //state = 'toggle1';
             } else if (Input.isTriggered('left')) {
                 SoundManager.playCursor();
-                if (this._timeoutOnWindow.get()) {
-                	state = 'timeoutInput';
-                } else {
-                	state = 'timeoutOn';
-                }
+                //state = 'toggle1';
             } else if (okTrigger) {
                 this.refreshToggles();
             } else if (Input.isTriggered('down')) {
@@ -2699,18 +3059,11 @@ Window_ModPatchCreate.prototype.update = function() {
             }
         } else if (this._state == 'toggle2') {
             if (Input.isTriggered('right')) {
-                if (this._eqToggleWindow.get()) {
-                	state = 'eqMinRatio';
-                } else {
-                	state = 'eqOn';
-                }
+                SoundManager.playCursor();
+                //state = 'toggle2';
             } else if (Input.isTriggered('left')) {
                 SoundManager.playCursor();
-                if (this._timeoutOnWindow.get()) {
-                	state = 'maxProcesses';
-                } else {
-                	state = 'timeoutOn';
-                }
+                //state = 'toggle2';
             } else if (okTrigger) {
                 this.refreshToggles();
             } else if (Input.isTriggered('down')) {
@@ -2725,10 +3078,10 @@ Window_ModPatchCreate.prototype.update = function() {
         } else if (this._state == 'toggle3') {
             if (Input.isTriggered('right')) {
                 SoundManager.playCursor();
-                state = 'eqOn';
+                //state = 'toggle3';
             } else if (Input.isTriggered('left')) {
                 SoundManager.playCursor();
-                state = 'timeoutOn';
+                //state = 'toggle3';
             } else if (okTrigger) {
                 this.refreshToggles();
             } else if (Input.isTriggered('up')) {
@@ -2740,152 +3093,6 @@ Window_ModPatchCreate.prototype.update = function() {
                 // state = this._toggle3Window.get() ? 'input' : 'toggle1'; Changed my mind about vertical cycling
                 if (!this._toggle3Window.get()) { state = 'toggle1' }
             }
-        } else if (this._state == 'eqOn') {
-        	if (Input.isTriggered('right')) {
-        		SoundManager.playCursor();
-       			state = 'timeoutOn';
-        	} else if (Input.isTriggered('left')) {
-        		SoundManager.playCursor();
-            state = 'toggle3';
-          } else if (okTrigger) {
-            this.refreshToggles();
-          } else if (Input.isTriggered('up')) {
-            SoundManager.playCursor();
-            state = 'input';
-          } else if (Input.isTriggered('down')) {
-            SoundManager.playCursor();
-            if (this._eqToggleWindow.get()) {
-       				state = 'eqMinSize';
-            } else {
-            	/* Changed my mind about vertical cycling in other columns
-            	state = 'input';
-            	*/
-            }
-          }
-        } else if (this._state == 'eqMinSize') {
-        	if (Input.isTriggered('right')) {
-        		SoundManager.playCursor();
-        		if (this._timeoutOnWindow.get()) {
-        			state = 'timeoutInput';
-        		} else {
-        			state = 'timeoutOn';
-        		}
-        	} else if (Input.isTriggered('left')) {
-        		SoundManager.playCursor();
-            if (this._toggle3Window.get()) {
-       				state = 'toggle3';
-            } else {
-            	state = 'toggle1';
-            }
-          } else if (okTrigger) {
-              state = 'eqMinSize'; //submit will try to exitFocus - restore focus, stay on this state.
-          } else if (Input.isTriggered('up')) {
-              SoundManager.playCursor();
-              state = 'eqOn';
-          } else if (Input.isTriggered('down')) {
-              SoundManager.playCursor();
-              //If we are here, eqOn must be true
-              state = 'eqMinRatio';
-          }
-        } else if (this._state == 'eqMinRatio') {
-        	if (Input.isTriggered('right')) {
-        		SoundManager.playCursor();
-        		state = 'maxProcesses'; //aligned with this, so timeoutOn doesn't matter
-        	} else if (Input.isTriggered('left')) {
-        		SoundManager.playCursor();
-            if (this._toggle3Window.get()) {
-       				state = 'toggle3';
-            } else {
-            	state = 'toggle2';
-            }
-          } else if (okTrigger) {
-              state = 'eqMinRatio'; //submit will try to exitFocus - restore focus, stay on this state.
-          } else if (Input.isTriggered('up')) {
-              SoundManager.playCursor();
-              //If we are here, eqOn must be true
-              state = 'eqMinSize';
-          } else if (Input.isTriggered('down')) {
-          	SoundManager.playCursor();
-          	/* Changed my mind about vertical cycling in other columns
-              SoundManager.playCursor();
-              state = 'input';
-              */
-          }
-        } else if (this._state == 'timeoutOn') {
-        	if (Input.isTriggered('right')) {
-        		SoundManager.playCursor();
-       			state = 'toggle3';
-        	} else if (Input.isTriggered('left')) {
-        		SoundManager.playCursor();
-            state = 'eqOn';
-          } else if (okTrigger) {
-            this.refreshToggles();
-          } else if (Input.isTriggered('up')) {
-          	SoundManager.playCursor();
-          	/* Changed my mind about vertical cycling in other columns
-            SoundManager.playCursor();
-            state = 'input';
-            */
-          } else if (Input.isTriggered('down')) {
-            SoundManager.playCursor();
-            if (this._timeoutOnWindow.get()) {
-       				state = 'timeoutInput';
-            } else {
-            	state = 'maxProcesses';
-            }
-          }
-        } else if (this._state == 'timeoutInput') {
-        	if (Input.isTriggered('right')) {
-        		SoundManager.playCursor();
-        		if (this._toggle3Window.get()) {
-       				state = 'toggle3';
-            } else {
-            	state = 'toggle1';
-            }
-        	} else if (Input.isTriggered('left')) {
-        		SoundManager.playCursor();
-            if (this._eqToggleWindow.get()) {
-       				state = 'eqMinSize';
-            } else {
-            	state = 'eqOn';
-            }
-          } else if (okTrigger) {
-              state = 'timeoutInput'; //submit will try to exitFocus - restore focus, stay on this state.
-          } else if (Input.isTriggered('up')) {
-              SoundManager.playCursor();
-              state = 'timeoutOn';
-          } else if (Input.isTriggered('down')) {
-              SoundManager.playCursor();
-              state = 'maxProcesses';
-          }
-        } else if (this._state == 'maxProcesses') {
-        	if (Input.isTriggered('right')) {
-        		SoundManager.playCursor();
-        		if (this._toggle3Window.get()) {
-       				state = 'toggle3';
-            } else {
-            	state = 'toggle2';
-            }
-        	} else if (Input.isTriggered('left')) {
-        		SoundManager.playCursor();
-            if (this._eqToggleWindow.get()) {
-       				state = 'eqMinRatio';
-            } else {
-            	state = 'eqOn';
-            }
-          } else if (okTrigger) {
-              state = 'maxProcesses'; //submit will try to exitFocus - restore focus, stay on this state.
-          } else if (Input.isTriggered('up')) {
-              SoundManager.playCursor();
-              //If "Timeout On" is true, timeoutInput is disabled, so skip it
-              state = this._timeoutOnWindow.get() ? 'timeoutInput' : 'timeoutOn';
-          } else if (Input.isTriggered('down')) {
-          	SoundManager.playCursor();
-          	/* Changed my mind about vertical cycling in other columns
-              SoundManager.playCursor();
-              state = 'input';
-              */
-          }
         } else if (this._state == 'submit') {
             if (Input.isTriggered('left')) {
                 SoundManager.playCursor();
@@ -2915,12 +3122,6 @@ Window_ModPatchCreate.prototype.setState = function(state) {
         this._toggle1Window.deactivate();
         this._toggle2Window.deactivate();
         this._toggle3Window.deactivate();
-        this._eqToggleWindow.deactivate();
-        this._eqMinSizeWindow.deactivate();
-        this._eqMinRatioWindow.deactivate();
-        this._timeoutOnWindow.deactivate();
-        this._timeoutInputWindow.deactivate();
-        this._maxProcessesWindow.deactivate();
         this._inputText.deactivate();
         this._saveButton.deactivate();
 
@@ -2933,16 +3134,6 @@ Window_ModPatchCreate.prototype.setState = function(state) {
             case 'input':
             case 'error': this._inputText.activate(); this._inputText.refresh(); break;
             case 'submit': this._saveButton.activate(); break;
-
-            case 'eqOn': this._eqToggleWindow.activate(); break;
-            case 'eqMinSize': this._eqMinSizeWindow.activate(); this._eqMinSizeWindow.refresh(); break;
-            case 'eqMinRatio': this._eqMinRatioWindow.activate(); this._eqMinRatioWindow.refresh(); break;
-
-            case 'timeoutOn': this._timeoutOnWindow.activate(); break;
-            case 'timeoutInput': this._timeoutInputWindow.activate(); this._timeoutInputWindow.refresh(); break;
-
-            case 'maxProcesses': this._maxProcessesWindow.activate(); this._maxProcessesWindow.refresh(); break;
-
             default: return;
         }
     }
@@ -2960,53 +3151,27 @@ Window_ModPatchCreate.prototype.refreshToggles = function(state) {
         this._toggle1Window.setColor(this._toggleSelectableColor);
         this._toggle2Window.setColor(this._toggleSelectableColor);
     }
-    if (this._eqToggleWindow.get()) {
-    	this._eqMinSizeWindow.setFontColor(this._toggleSelectableColor);
-    	this._eqMinRatioWindow.setFontColor(this._toggleSelectableColor);
-    	this._eqMinSizeWindow.setCaptionColor(this._toggleSelectableColor);
-    	this._eqMinRatioWindow.setCaptionColor(this._toggleSelectableColor);
-    	this._eqMinSizeWindow.opacity = 255;
-    	this._eqMinRatioWindow.opacity = 255;
-    } else {
-    	this._eqMinSizeWindow.setFontColor(this._toggleDisabledColor);
-    	this._eqMinRatioWindow.setFontColor(this._toggleDisabledColor);
-    	this._eqMinSizeWindow.setCaptionColor(this._toggleDisabledColor);
-    	this._eqMinRatioWindow.setCaptionColor(this._toggleDisabledColor);
-    	this._eqMinSizeWindow.opacity = 100;
-    	this._eqMinRatioWindow.opacity = 100;
-    }
-    if (this._timeoutOnWindow.get()) {
-    	this._timeoutInputWindow.setFontColor(this._toggleSelectableColor);
-    	this._timeoutInputWindow.setCaptionColor(this._toggleSelectableColor);
-    	this._timeoutInputWindow.opacity = 255;
-    } else {
-    	this._timeoutInputWindow.setFontColor(this._toggleDisabledColor);
-    	this._timeoutInputWindow.setCaptionColor(this._toggleDisabledColor);
-    	this._timeoutInputWindow.opacity = 100;
-    }
 
     //If any of the toggles is selected/active, mark it with a special color
     switch(this._state) {
-    	case 'toggle1': this._toggle1Window.setColor(this._toggleSelectedColor); break;
-    	case 'toggle2': this._toggle2Window.setColor(this._toggleSelectedColor); break;
-    	case 'toggle3': this._toggle3Window.setColor(this._toggleSelectedColor); break;
-    	case 'eqOn': this._eqToggleWindow.setColor(this._toggleSelectedColor); break;
-    	case 'timeoutOn': this._timeoutOnWindow.setColor(this._toggleSelectedColor); break;
-    	default: break;
+        case 'toggle1': this._toggle1Window.setColor(this._toggleSelectedColor); break;
+        case 'toggle2': this._toggle2Window.setColor(this._toggleSelectedColor); break;
+        case 'toggle3': this._toggle3Window.setColor(this._toggleSelectedColor); break;
+        default: break;
     }
 }
 
 Window_ModPatchCreate.prototype.doExportConfirm = function(file) {
+    /* Allow them to run again on the same name, in case a previous run didn't finish
     var used = []; //test to make sure they do not pick a name they have already used
     if (fs.existsSync(path.join(ModManager._path, 'patches'))) {
         used = fs.readdirSync(path.join(ModManager._path, 'patches'));
-    }
+    } */
     var isValidFoldername = function(fname){
       var rg1=/^[^\\/:\*\?"<>\|]+$/; // forbidden characters \ / : * ? " < > |
       var rg2=/((^\.)|(( |\.)$))/; // cannot start with dot (.), cannot end with space or dot
       var rg3=/^(nul|prn|con|aux|lpt[1-9]|com[1-9])(\.|$)/i; // forbidden file names
-      result = (fname)&&rg1.test(fname)&&!rg2.test(fname)&&!rg3.test(fname)&&(used.indexOf(fname) < 0)&&(fname.length > 0);
-      //console.log("result:",rg1.test(fname),!rg2.test(fname),!rg3.test(fname),(used.indexOf(fname) < 0), (fname.length > 0),result);
+      result = (fname)&&rg1.test(fname)&&!rg2.test(fname)&&!rg3.test(fname)&&(fname.length > 0);
       return result;
     };
     var ret = isValidFoldername(file);
@@ -3030,9 +3195,10 @@ Window_ModPatchCreate.prototype.doExportFinal = function() {
     config['script_compare'] = this._toggle2Window.get();
     config['explicit_list'] = this._toggle3Window.get();
 
-    //Use current eq, timeout, and process settings for how to run the diff exe
-    this.setDiffParams();
+    AutoDiffLogger.register(this);
     AutoDiff.createPatch(config, this._inputText.message);
+
+    this._state = "diffing";
     return true;
 }
 
@@ -3045,28 +3211,8 @@ Window_ModPatchCreate.prototype.setSubmit = function() {
     this.setState('submit');
 }
 
-Window_ModPatchCreate.prototype.numberConstrain = function(lower, upper) {
-    return function(input) {
-    		if (input == "") return true; //Allow user to not change default/empty
-        const num = parseInt(input);
-        if (isNaN(num)) { return false; }
-        return ((num >= lower) && (num <= upper));
-    }
-}
-
-Window_ModPatchCreate.prototype.setDiffParams = function() {
-    AutoDiff.setExecArgs([
-            this._eqToggleWindow.get() ? "1" : "0",
-            this._eqMinSizeWindow.message,
-            this._eqMinRatioWindow.message,
-            this._timeoutOnWindow.get() ? "1" : "0",
-            this._timeoutInputWindow.message,
-            this._maxProcessesWindow.message
-        ]);
-}
-
 Window_ModPatchCreate.prototype.createInputWindow = function() {
-    this._inputText = new Window_Textbox({'x':Graphics.boxWidth/4-120,'y':Graphics.boxHeight/8.0 +20, 'caption':"Patch Name:", 'caption_size':20 });
+    this._inputText = new Window_Textbox({'x':Graphics.boxWidth/4-120,'y':Graphics.boxHeight/16.0 +20, 'caption':"Patch Name:", 'caption_size':20 });
     this._inputText.unlock(['Escape', 'Enter', 'Arrow Down', 'Arrow Up', 'enter', 'ok', 'up', 'down']);
     this._inputText.setSubmitHandler(Window_ModPatchCreate.prototype.setSubmit,this);
     //Only submit from submit button
@@ -3074,89 +3220,80 @@ Window_ModPatchCreate.prototype.createInputWindow = function() {
     this.addChild(this._inputText);
 }
 Window_ModPatchCreate.prototype.createHelpWindow = function() {
-    this._descWindow = new Window_Base((1.0/8.0)*Graphics.boxWidth, (3.0/4.0)*Graphics.boxHeight-this.lineHeight(), (3.0/4.0)*Graphics.boxWidth, (1.0/4.0)*Graphics.boxHeight );
+    this._descWindow = new Window_Base((1.0/16.0)*Graphics.boxWidth, (5.0/8.0)*Graphics.boxHeight-this.lineHeight(), (7.0/8.0)*Graphics.boxWidth, (1.0/4.0)*Graphics.boxHeight );
     this.addChild(this._descWindow);
 };
 /* I apologize for deciding toggle 3 should actually be on the top after making this */
 Window_ModPatchCreate.prototype.createToggle1Window = function() {
-    this._toggle1Window = new Window_Checkbox((1.0/4.0)*Graphics.boxWidth-10, (1.0/2.0)*Graphics.boxHeight, 20, {'text':'Compare Assets', 'color':this._toggleSelectedColor, 'disable': '#ffffff', 'direction':'up'});
+    this._toggle1Window = new Window_Checkbox((1.0/4.0)*Graphics.boxWidth-10, (3.0/8.0)*Graphics.boxHeight, 20, {'text':'Compare Assets', 'color':this._toggleSelectedColor, 'disable': '#ffffff', 'direction':'up'});
     this._toggle1Window.set(false); //Default to Off
     this.addChild(this._toggle1Window);
 };
 Window_ModPatchCreate.prototype.createToggle2Window = function() {
-    this._toggle2Window = new Window_Checkbox((1.0/4.0)*Graphics.boxWidth-10, (5.0/8.0)*Graphics.boxHeight, 20, {'text':'Compare Scripts', 'color':this._toggleSelectedColor, 'disable': '#ffffff', 'direction':'up'});
+    this._toggle2Window = new Window_Checkbox((1.0/4.0)*Graphics.boxWidth-10, (1.0/2.0)*Graphics.boxHeight, 20, {'text':'Compare Scripts', 'color':this._toggleSelectedColor, 'disable': '#ffffff', 'direction':'up'});
     this._toggle2Window.set(false); //Default to Off
     this.addChild(this._toggle2Window);
 };
 Window_ModPatchCreate.prototype.createToggle3Window = function() {
-    this._toggle3Window = new Window_Checkbox((1.0/4.0)*Graphics.boxWidth-10, (3.0/8.0)*Graphics.boxHeight, 20, {'text':'Use File List', 'color':this._toggleSelectedColor, 'disable': '#ffffff', 'direction':'up'});
+    this._toggle3Window = new Window_Checkbox((1.0/4.0)*Graphics.boxWidth-10, (1.0/4.0)*Graphics.boxHeight, 20, {'text':'Use File List', 'color':this._toggleSelectedColor, 'disable': '#ffffff', 'direction':'up'});
     this._toggle3Window.set(false); //Default to Off
     this.addChild(this._toggle3Window);
 };
 
-Window_ModPatchCreate.prototype.createEqToggle = function() {
-    this._eqToggleWindow = new Window_Checkbox((1.0/2.0)*Graphics.boxWidth-10, (3.0/8.0)*Graphics.boxHeight, 20, {'text':'Eq Enable', 'color':this._toggleSelectedColor, 'disable': '#ffffff', 'direction':'up'});
-    this.addChild(this._eqToggleWindow);
-}
-Window_ModPatchCreate.prototype.createEqMinSizeBox = function() {
-    this._eqMinSizeWindow = new Window_Textbox({'x':Graphics.boxWidth*1.0/2.0-90,'y':Graphics.boxHeight*1.0/2.0, 'width':180, 'caption':"Min Size", 'reset':true });
-    this._eqMinSizeWindow.unlock(['Escape', 'Enter', 'Arrow Down', 'Arrow Up', 'enter', 'ok', 'up', 'down']);
-    this._eqMinSizeWindow.setHint(String(AutoDiff._eqMinSize));
-    this._eqMinSizeWindow.setConstraint(this.numberConstrain(1,999999),"Must be an integer between 1 and 999999.", this);
-    this.addChild(this._eqMinSizeWindow);
-}
-Window_ModPatchCreate.prototype.createEqMinRatioBox = function() {
-    this._eqMinRatioWindow = new Window_Textbox({'x':Graphics.boxWidth*1.0/2.0-90,'y':Graphics.boxHeight*5.0/8.0, 'width':180, 'caption':"Min Ratio", 'reset':true });
-    this._eqMinRatioWindow.unlock(['Escape', 'Enter', 'Arrow Down', 'Arrow Up', 'enter', 'ok', 'up', 'down']);
-    this._eqMinRatioWindow.setHint(String(AutoDiff._eqMinRatio));
-    this._eqMinRatioWindow.setConstraint(this.numberConstrain(50,100),"Must be an integer between 50 and 100.", this);
-    this.addChild(this._eqMinRatioWindow);
-}
-Window_ModPatchCreate.prototype.createTimeoutToggle = function() {
-    this._timeoutOnWindow = new Window_Checkbox((3.0/4.0)*Graphics.boxWidth-10, (3.0/8.0)*Graphics.boxHeight, 20, {'text':'Timeout Enable', 'color':this._toggleSelectedColor, 'disable': '#ffffff', 'direction':'up'});
-    this.addChild(this._timeoutOnWindow);
-}
-Window_ModPatchCreate.prototype.createTimeoutInput = function() {
-    this._timeoutInputWindow = new Window_Textbox({'x':Graphics.boxWidth*3.0/4.0-90,'y':Graphics.boxHeight/2.0, 'width':180, 'caption':"Timeout", 'reset':true });
-    this._timeoutInputWindow.unlock(['Escape', 'Enter', 'Arrow Down', 'Arrow Up', 'enter', 'ok', 'up', 'down']);
-    this._timeoutInputWindow.setHint(String(AutoDiff._searchTimeout));
-    this._timeoutInputWindow.setConstraint(this.numberConstrain(20,999999),"Must be an integer between 20 and 999999.", this);
-    this.addChild(this._timeoutInputWindow);
-}
-Window_ModPatchCreate.prototype.createMaxProcessInput = function() {
-    this._maxProcessesWindow = new Window_Textbox({'x':Graphics.boxWidth*3.0/4.0-90,'y':Graphics.boxHeight*5.0/8.0, 'width':180, 'caption':"Max Processes", 'reset':true });
-    this._maxProcessesWindow.unlock(['Escape', 'Enter', 'Arrow Down', 'Arrow Up', 'enter', 'ok', 'up', 'down']);
-    this._maxProcessesWindow.setHint(String(AutoDiff._maxProcesses));
-    this._maxProcessesWindow.setConstraint(this.numberConstrain(1,32),"Must be an integer between 1 and 32.", this);
-    this.addChild(this._maxProcessesWindow);
-}
-
 Window_ModPatchCreate.prototype.createSubmitButton = function() {
-    this._saveButton = new Window_CommandList(['Save'], (5.0/8.0)*Graphics.boxWidth, Graphics.boxHeight/8, {'width':(1.0/4.0)*Graphics.boxWidth});
+    this._saveButton = new Window_CommandList(['Save'], (5.0/8.0)*Graphics.boxWidth, Graphics.boxHeight/16.0, {'width':(1.0/4.0)*Graphics.boxWidth});
     //this._saveButton.setHandler('Save', this.writeChanges.bind(this));
     this.addChild(this._saveButton);
 };
 
 Window_ModPatchCreate.prototype.setupDesc = function() {
-    this._descWindow.contents.clear();
+    //this._descWindow.contents.clear();
     const descriptions = {
         'error': "Enter a valid/unused folder name.",
         'submit': "Hit Enter to start creating the patch. It may take a few minutes.",
         'input': "Enter a folder name to build the patch in. Hit Enter when finished.",
         'toggle1': "Setting this to On means that the patch creator will automatically compare assets outside the database (images, audio files, etc) for additions and modifications.",
         'toggle2': "Setting this to On means that the patch creator will automatically compare script files for additions and modification.",
-        'toggle3': "Setting this to On means that the patch creator will only update/patch/overwrite files specified (via full filepath) in "+ModManager._listFileName+".",
-        'eqOn': "This turns on an optimization assumption that could improve diff search time at the risk of excluding the optimal diff. The idea of the assumption is that if two locations that are roughly 'Min Size' large share 'Min Ratio' percent of their data, that it will not consider those segments to possibly match any other segments.",
-        'eqMinSize': "Should be a positive integer. Default 30. Represents 'size' of a JSON entry based on the number of primitives, including keys. { 'key1': [1, 2, 3], 'key2': { 'a': [], 'b': null } } is considered to have 9 leaves, for example.",
-        'eqMinRatio': "Should be an integer between 50 and 100. Default 90. Recommended to be very high. Represents the minimum percentage of data two JSON entries must share before they are assumed to have originated from the same entry.",
-        'timeoutOn': "Setting this to On means that every individual file diff shall be subject to a timeout, measured in seconds. Some diffs would take a very long time to generate; when the timeout is reached, the process will stop and it will use the best diff it found by then.",
-        'timeoutInput': "The time in seconds that a diff search is allowed to run. The longer the algorithm runs, the better result it will find. All diffs will work for creating game patches, but better diffs obscure more of the original files' data. IF SPARING THE TIME IS AT ALL AN OPTION, MAKE THIS VALUE AS HIGH AS POSSIBLE.",
-        'maxProcesses': "You can have multiple diff search algorithms run in parallel, but this may consume more resources, perhaps even crash your program if unregulated. This number is the maximum number of subprocess that can be spawned. Default 1."
+        'toggle3': "Setting this to On means that the patch creator will only update/patch/overwrite files specified (via full filepath) in "+ModManager._listFileName+"."
     }
-    var desc = (descriptions[this._state] || "");
+    let desc = (descriptions[this._state] || "");
     this._descWindow.contents.fontSize = 12;
     this._descWindow.drawWrapText(desc);
 };
+
+Window_ModPatchCreate.prototype.log = function(message, color) {
+    const MESSAGE = 0;
+    const HEIGHT = 1;
+    const COLOR = 2;
+
+    this._descWindow.contents.clear();
+    this._logMessages.push([message, this._descWindow.getWrapHeight(message), color]);
+    const margins = 10;
+    let displayHeight = this._descWindow.height - 2*margins;
+    let showing = [];
+    //Go through from back to front, to ensure the bottom visible message is
+    // the most recent.
+    let i;
+    for (i = this._logMessages.length-1; i >= 0 && displayHeight > 0; i--) {
+        displayHeight -= this._logMessages[i][HEIGHT];
+    }
+    //If the whole window/box isn't filled, it's fine, set i to zero to use whole
+    //  log array as "showing"; also make sure it doesn't start printing from partway down
+    if (displayHeight >= 0) { displayHeight = 0; i = 0; }
+    //If it adds all of them, we need i to be 0 or the slice below will capture nothing
+    //  But it's possible that the very last one would cut off the message, so we still
+    //  want to run through the iteration where i = 0 to get the displayHeight adjustment.
+    if (i < 0) { i = 0; }
+    //By slicing, instead of pushing them as we iterate through earlier, it will keep the order
+    //  scrolling - oldest on top
+    showing = this._logMessages.slice(i, this._logMessages.length);
+    for (i = 0; i < showing.length; i++) {
+        let entry = showing[i];
+        //Start from any negative leftover height - want oldest cut off, if it doesn't break evenly into lines,
+        // not the newest
+        displayHeight = this._descWindow.drawWrapLine(entry[MESSAGE], true, displayHeight, 'left', 12, entry[COLOR]);
+    }
+}
 
 Window_ModPatchCreate.prototype.close = function() {
     Window_Base.prototype.close.call(this);
@@ -3164,13 +3301,6 @@ Window_ModPatchCreate.prototype.close = function() {
     this._toggle1Window.close();
     this._toggle2Window.close();
     this._toggle3Window.close();
-
-    this._eqToggleWindow.close();
-    this._eqMinSizeWindow.close();
-    this._eqMinRatioWindow.close();
-    this._timeoutOnWindow.close();
-    this._timeoutInputWindow.close();
-    this._maxProcessesWindow.close();
 
     this._saveButton.close();
     this._descWindow.close();
@@ -3182,13 +3312,6 @@ Window_ModPatchCreate.prototype.open = function() {
     this._toggle2Window.open();
     this._toggle3Window.open();
 
-    this._eqToggleWindow.open();
-    this._eqMinSizeWindow.open();
-    this._eqMinRatioWindow.open();
-    this._timeoutOnWindow.open();
-    this._timeoutInputWindow.open();
-    this._maxProcessesWindow.open();
-
     this._saveButton.open();
     this._descWindow.open();
 }
@@ -3199,13 +3322,6 @@ Window_ModPatchCreate.prototype.hide = function() {
     this._toggle2Window.hide();
     this._toggle3Window.hide();
 
-    this._eqToggleWindow.hide();
-    this._eqMinSizeWindow.hide();
-    this._eqMinRatioWindow.hide();
-    this._timeoutOnWindow.hide();
-    this._timeoutInputWindow.hide();
-    this._maxProcessesWindow.hide();
-
     this._saveButton.hide();
     this._descWindow.hide();
 }
@@ -3215,13 +3331,6 @@ Window_ModPatchCreate.prototype.show = function() {
     this._toggle1Window.show();
     this._toggle2Window.show();
     this._toggle3Window.show();
-
-    this._eqToggleWindow.show();
-    this._eqMinSizeWindow.show();
-    this._eqMinRatioWindow.show();
-    this._timeoutOnWindow.show();
-    this._timeoutInputWindow.show();
-    this._maxProcessesWindow.show();
 
     this._saveButton.show();
     this._descWindow.show();
@@ -3236,13 +3345,6 @@ Window_ModPatchCreate.prototype.deactivate = function() {
     this._toggle1Window.deactivate();
     this._toggle2Window.deactivate();
     this._toggle3Window.deactivate();
-
-    this._eqToggleWindow.deactivate();
-    this._eqMinSizeWindow.deactivate();
-    this._eqMinRatioWindow.deactivate();
-    this._timeoutOnWindow.deactivate();
-    this._timeoutInputWindow.deactivate();
-    this._maxProcessesWindow.deactivate();
 
     this._saveButton.deactivate();
     this._descWindow.deactivate();
@@ -3326,7 +3428,7 @@ Window_SaveConvert.prototype.createModListWindow = function(dx, dy) {
 }
 
 Window_SaveConvert.prototype.createOverwriteConfWindow = function() {
-    this._confirmWindow = new Window_CommandList(['Yes', 'No'], (1.0/3.0)*Graphics.boxWidth, (1.0/2.0)*Graphics.boxHeight-2*this.lineHeight(), {'maxcols':2,'width':(1.0/3.0)*Graphics.boxWidth});
+    this._confirmWindow = new Window_CommandList(['Yes', 'No'], (1.0/3.0)*Graphics.boxWidth, (1.0/2.0)*Graphics.boxHeight+2*this.lineHeight(), {'maxcols':2,'width':(1.0/3.0)*Graphics.boxWidth});
     this._confirmWindow.select(1); //Default to No
     this.addWindow(this._confirmWindow);
 };
@@ -3361,7 +3463,7 @@ Window_SaveConvert.prototype.drawSelectedSaveSprite = function(savefileId) {
         //this.changePaintOpacity(valid); <- TODO look into this for "disabling" Toggles 1 and 2
         var bottom = textRect.height - 2*this.standardPadding();
         //Draw game title and party, if able
-        if (textRect.width >= 420) {
+        if (true || textRect.width >= 420) {
             if (info.patch) { 
                 DataManager._backupVersion = DataManager._version;
                 DataManager._version = info.patch;
@@ -3375,7 +3477,7 @@ Window_SaveConvert.prototype.drawSelectedSaveSprite = function(savefileId) {
             if (info.characters) {
                 for (var i = 0; i < info.characters.length; i++) {
                     var data = info.characters[i];
-                    this._saveSprite.drawCharacter(data[0], data[1], (220) + i * 48, (bottom - 4));
+                    this._saveSprite.drawCharacter(data[0], data[1], 24 + i * 48, (bottom - 4));
                 }
             }
 
@@ -3538,7 +3640,7 @@ Window_SaveConvert.prototype.onConvertOk = function() {
 
     const restore = DataManager._version;
     DataManager.loadGame(this._firstIndex);
-    DataManager._version = path.join(ModManager._path, ModManager._installsFolder, newVersion);
+    DataManager._version = newVersion;
 
     function saveWithDataStructs() {
         Graphics.frameCount = $gameSystem._framesOnSave;
@@ -3547,6 +3649,7 @@ Window_SaveConvert.prototype.onConvertOk = function() {
         }
         globalSaveInfo[this.savefileId()].patch = newVersion;
         DataManager.saveGlobalInfo(globalSaveInfo);
+        $gameMap.setupEvents();
 
         //If the patch comes with a custome conversion function/script, load it and run it while
         const convertFile = path.join(ModManager._path, ModManager._installsFolder, ModManager._convertFilename);
@@ -3574,6 +3677,7 @@ Window_SaveConvert.prototype.onConvertOk = function() {
     ModManager.queuedFunction = saveWithDataStructs.bind(this);
 
     DataManager.loadDatabase();
+    DataManager.loadMapData($gameMap.mapId());
 };
 
 //Hides the list of installed modded game instances when the user
@@ -3587,8 +3691,8 @@ Window_SaveConvert.prototype.refreshModList = function() {
             this._modListWindow.show();
             const globalSaveInfo = DataManager.loadGlobalInfo();
             var install = globalSaveInfo[saveId].patch;
-            if (install == "") { install = ModManager._baseGameText; }
-            this._modListWindow.select(this._modOptions.indexOf(install));
+            if (!install || install == "") { install = ModManager._baseGameText; }
+            this._modListWindow.select(this._modOptions.indexOf(path.basename(install)));
         } else {
             this._modListWindow.hide();
         }
@@ -3676,6 +3780,55 @@ Window_SaveConvert.prototype.deactivate = function() {
     this._confirmWindow.deactivate();
 }
 
+
+//-----------------------------------------------------------------------------
+// AutoDiffLogger
+//
+// The static class that handles logging during diffing and patch creation.
+
+function AutoDiffLogger() {
+    throw new Error('This is a static class');
+}
+
+AutoDiffLogger._successColor = "#06c951"; //green
+AutoDiffLogger._normalColor = "#e8e8e8"; //gray
+AutoDiffLogger._errorColor = "#e00909"; //red
+
+AutoDiffLogger.register = function(_logger) {
+    this.logger = _logger;
+}
+
+AutoDiffLogger.deRegister = function() {
+    this.logger = null;
+}
+
+/* NOTE: currently, never called. "Failed diff creation" is not implemented. */
+AutoDiffLogger.reportError = function(fileA, fileB) {
+    fileA = fileA.replace(ModManager._path, '');
+    fileB = fileB.replace(path.dirname(process.mainModule.filename),'');
+    this.logger.log("Failed to create diff for: "+fileA+" "+fileB, this._errorColor);
+}
+
+AutoDiffLogger.reportSuccess = function(fileA, fileB, fileC) {
+    fileA = fileA.replace(ModManager._path, '');
+    fileB = fileB.replace(path.dirname(process.mainModule.filename),'');
+    fileC = fileC.replace(path.dirname(process.mainModule.filename),'');
+    this.logger.log("Successfully created file: "+fileC+" from files "+fileA+" "+fileB, this._successColor);
+}
+
+AutoDiffLogger.reportStart = function(fileA, fileB, fileC) {
+    fileA = fileA.replace(ModManager._path, '');
+    fileB = fileB.replace(path.dirname(process.mainModule.filename),'');
+    fileC = fileC.replace(path.dirname(process.mainModule.filename),'');
+    this.logger.log("Creating diff file: "+fileC+" from files "+fileA+" "+fileB, this._normalColor);
+}
+
+AutoDiffLogger.reportOverwrite = function(fileA, fileC) {
+    fileA = fileA.replace(ModManager._path, '');
+    fileC = fileC.replace(path.dirname(process.mainModule.filename),'');
+    this.logger.log("Copying file: "+fileC+" as "+fileA, this._normalColor);
+}
+
 //-----------------------------------------------------------------------------
 // AutoDiff
 //
@@ -3684,78 +3837,6 @@ Window_SaveConvert.prototype.deactivate = function() {
 function AutoDiff() {
     throw new Error('This is a static class');
 }
-
-/* DEFUNCT - MOVED TO C++ EXECUTABLE
-AutoDiff.checkEquality = function(a, b) {
-    if (Array.isArray(a) && Array.isArray(b)) {
-        return this.arrayEquality(a, b);
-    }
-    function isObject(val) {
-        if (val === null) return false;
-        if (Array.isArray(val)) return false;
-        return (typeof val === 'object');
-    }
-    if ((!Array.isArray(a) && !Array.isArray(b)) && (this.isObject(a) && this.isObject(b))) {
-        return this.jsonEquality(a, b);
-    }
-    if ((a == b) && ((typeof a) == (typeof b))) {
-        //check primitives
-        return true;
-    }
-    //function, null, or a and b are different types
-    return false;
-} */
-
-/* DEFUNCT - MOVED TO C++ EXECUTABLE
-AutoDiff.arrayEquality = function(a, b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-        if (!this.checkEquality(a[i], b[i])) return false;
-    }
-    return true;
-} */
-
-/* DEFUNCT - MOVED TO C++ EXECUTABLE
-AutoDiff.jsonEquality = function(a, b) {
-    var a_keys = Object.getOwnPropertyNames(a);
-    var b_keys = Object.getOwnPropertyNames(b);
-
-    if (!this.arrayEquality(a_keys, b_keys)) { return false; }
-    for (var i = 0; i < a_keys.length; i++) {
-        let key = a_keys[i];
-        if (!this.checkEquality(a[key], b[key])) { return false; }
-    }
-    return true;
-} */
-
-/*
-TOY EXAMPLE
-
-BASE:
-{
-    "maps":
-      0 : {"events" : [{A: 1, B: 2},{},{E: 1}], "tileset": "red"}
-      1 : {"events" : [{Q: 7}, {C: 2}], "tileset": "blue"}
-      2 : {}
-      3 : {"events" : [{R: 5}, {L: 3}, {C: 1}], "tileset": "yellow"}
-}
-
-add events to map 0, change event 0 in map 1, add map 2, insert map before map 3
-
-{
-    "maps":
-      0 : {"events" : [{A: 1, B: 2},{D: 1},{E: 1}, {B: 4}], "tileset": "red"}
-      1 : {"events" : [{Q: 5, Y: 3}, {C: 2}], "tileset": "blue"}
-      2 : {"events" : [{H: 3}], "tileset": "red"}
-      3 : {"events" : [{S: 2}, {L: 4, D: 3}], "tileset": "brown"}
-      4 : {"events" : [{R: 5}, {L: 3}, {C: 1}], "tileset": "yellow"}
-}
-
-There are two important questions this raises:
- 1) how do we stop it from making a redundant "modify" entry that is just a "delete-add" that's more explicit
-  than it needs to be? (the goal of this patching system is to minimize data exposure)
-
-*/
 
 /* Checks if an object equals "{}" */
 AutoDiff.isEmpty = function(obj) {
@@ -3779,189 +3860,14 @@ AutoDiff.cloneObj = function(obj) {
     return JSON.parse(JSON.stringify(obj));
 }
 
-
-/* This is so we now how much to weight a JSON object that is
- * being "added" or "deleted"; each primitive value accounts for one,
- * as does each key (to account for say, "5 => {}")
- */
- /* DEFUNCT - MOVED TO C++ EXECUTABLE
-AutoDiff.countLeaves = function(obj) {
-    let count = 0;
-    if (Array.isArray(obj)) {
-        for (var i = 0; i < obj.length; i++) {
-            count += this.countLeaves(obj[i]);
-        }
-    } else if (this.isObject(obj)) {
-        const keys = Object.getOwnPropertyNames(obj);
-        for (const key of keys) {
-            // Add 1 for the key itself, see rule above
-            count += (1 + this.countLeaves(obj[key]));
-        }
-    } else {
-        // some primitive
-        return 1; 
-    }
-    return count;
+AutoDiff.jsonDiff = function(a, b) {
+    let a_list = this.buildJsonList(a);
+    let b_list = this.buildJsonList(b);
+    return this.listDiff(a_list, b_list);
 }
-*/
-
-/* Note - there is a "worst case" that this method is vulnerable to;
- *  I do not believe it would come up through ordinary means, but if
- *  someone changed only the key in a dictionary pair, this method can
- *  only identify the change as a complete deletion of the key, and then
- *  complete addition of the value to the "new" key. This is fitting,
- *  perhaps, as that is how the change would have to happen programatically.
- *
- */
- /* DEFUNCT - MOVED TO C++ EXECUTABLE
-AutoDiff.jsonDiff = function(a, b, currCount, currBest) {
-    // Reminder: a is orig, b is new //
-    // Create subdiff //
-    var diff = {};
-
-  // I believe that the ordering of getOwnPropertyNames
-  // is deterministic, even across browsers... buuuut...
-  // it's not a bit deal to ensure it with sort, juuust
-  // to be sure. 
-   
-    var a_keys = Object.getOwnPropertyNames(a).sort();
-    var b_keys = Object.getOwnPropertyNames(b).sort();
-
-    // Init "delete", "modify", and "add" in diff
-    diff['-'] = [];
-    diff['m'] = a_keys.map(x => null); // Create an array with an entry for each key in the original
-    diff['+'] = {};
-    //Note: in theory, the syntax allows for the diff to have a "modify" on a deleted key.
-    // Thus, this function must be careful to never create such a situation
-     
-    var changes = currCount;
-
-    // So, with JSON, if the note above the function is true, we don't
-    // do traditional Myers Diff because we don't always have the same
-    // options; dictionaries are not "sequenced". If a key appears in one
-    // version and not the other, it can only have been added or deleted.
-    // Furthermore, values to keys are independent; a change does not "span"
-    // multiple keys, so we can independently Myers-diff the before and
-    // after values of any matching keys. We do not really need to branch
-    // or path-search through a graph, the choices - add, delete, or modify
-    // - are made for us by the keys.
-
-    // To expose slightly less data, instead of referring to keys in the
-    // original (say, when we mark a "delete [key]" or "change to [key]"
-    // in the diff), we refer to the index of the key in the sorted
-    // key list of a/the original. Note that we are ok with exposing
-    // data from the new version/patch (indeed, it is necessary).
-
-    // Perhaps this density of checks does more harm than good, but for an
-    // attempt at efficiency, we bound with "best changes" so, whenever we
-    // increment the number of current changes, we check if we have exceeded
-    // the "best" number of changes we have seen so far, in which case
-    // we know this method is worse, so we abort (return early; the calling
-    // function will know this is an "abort" and not a success because the
-    // changes count will exceed "best")
-
-    // Check old keys
-    for (var i = 0; i < a_keys.length; i++) {
-        const key = a_keys[i];
-        if (!b_keys.includes(key)) {
-            // key has been deleted
-            diff['-'].push(i);
-            // Add 1 at the end to represent the key itself
-            changes += this.countLeaves(a[key])+1;
-            if ((currBest > 0) && (changes > currBest)) return [changes, diff];
-
-        } else {
-            const a_next = a[key]; const b_next = b[key];
-            // If the values to compare are arrays
-            if (Array.isArray(a_next) && Array.isArray(b_next)) {
-
-                // If no modification occurred/is necessary, do nothing
-                if (this.arrayEquality(a_next, b_next)) {
-                    continue;
-                }
-                // Get subdiff of sub-array
-                const result = this.arrayDiff(a_next, b_next);
-                changes += result[0];
-                if ((currBest > 0) && (currBest < changes)) {
-                    return [changes, diff];
-                }
-
-                diff['m'][i] = result[1];
-
-            // If the values to compare are more json
-            } else if (
-                (!Array.isArray(a_next) && !Array.isArray(b_next)) && 
-                (this.isObject(a_next) && this.isObject(b_next))
-                ) {
-
-                // If no modification occurred/is necessary, do nothing
-                if (this.jsonEquality(a_next, b_next)) {
-                    continue;
-                }
-                // Recurse into key contents, run again,
-                //  and associate the diff to this key;
-                //  increment changes accordingly.
-                const result = this.jsonDiff(a, b, changes, currBest);
-                changes = result[0]; diff['m'][i] = result[1];
-                if ((currBest > 0) && (changes > currBest)) return [changes, diff];
-
-            // If the values are both primitives
-            } else if (!this.isObject(a_next) && !this.isObject(b_next)) {
-                // If the values match, no modification
-                if (a_next == b_next) {
-                    continue;
-                }
-                // Modify value
-                diff['m'][i] = b_next;
-                changes += 1;
-                if ((currBest > 0) && (changes > currBest)) return [changes, diff];
-
-            // If the values are not of the same type
-            } else {
-                // No efficient way to "modify" them to be the same, have to delete one
-                //  and add in a new one
-                //  "modify" entire entry (effectively deletes old entry, adds new)
-                diff['m'][i] = this.cloneObj(b[key]);
-                changes += this.countLeaves(a[key]);
-                changes += this.countLeaves(b[key]);
-                if ((currBest > 0) && (changes > currBest)) return [changes, diff];
-            }
-        }
-    }
-
-    // Add new keys - keys that do not appear in A
-    for (var i = 0; i < b_keys.length; i++) {
-        const key = b_keys[i];
-        if (!a_keys.includes(key)) {
-            // Add key and its corresponding value
-            diff['+'][key] = this.cloneObj(b[key]);
-            changes += this.countLeaves(b[key]) + 1;
-            if ((currBest > 0) && (changes > currBest)) return [changes, diff];
-        }
-    }
-
-    return [changes, diff];
-} */
-
-/* DEFUNCT - MOVED TO C++ EXECUTABLE
-AutoDiff.arrayDiff = function(a, b) {
-    // These represent indices into a and b
-    const n = a.length;
-    const m = b.length;
-
-    //if () {} //TODO - try straightforward listDiff first
-
-    // Since arrayDiff, despite only wrapping the recursive one, can effectively be called
-    //   recursively through jsonDiff, it must return a diff count in addition to the diff "answer"
-    return this.arrayDepthFirst(a, b, {'+': {}, 'm': a.map(x => null), '-':[]}, 0, 0, n, m, 0, -1);
-} */
-
-/* TODO - think about all the diffs; is the cloning excessive? Want to use
- * minimal stack space, already we'll be using a bunch so limit redundancy */
 
 //credit to: https://blog.jcoglan.com/2017/02/17/the-myers-diff-algorithm-part-3/
 //String-comparison, line-based diffing for script files
-/* DEFUNCT - MOVED TO C++ EXECUTABLE
 AutoDiff.listDiff = function(a, b) {
     const loopIndex = function(arraySize) {
         return (function(x) {
@@ -4082,271 +3988,76 @@ AutoDiff.listDiff = function(a, b) {
 
     backtrack(shortestEdit(a, b));
     return diff;
-} */
+} 
 
-//A is original, B is new
-//AutoDiff.textDiff = function(fileA, fileB) TODO - DELETE OLD
-AutoDiff.textDiff = function(fileA, fileB, outfile) {
-    /* Arguments:
-    <0: command name of executable file>
-     1: original version of file (filename string)
-     2: modified version of file (filename string)
-     3: output path (path string)
-     4: 0 = treat the files as newline-delimited text files, 1 = treat the files as JSON
-      - the following will be constant, and supplied by the class later -
-     5: is eq search optimization enabled (0 = disabled)
-     6: eq search optimization minSize (unsigned int)
-     7: eq search optimization minRatio (double)
-     8: is search timeout enabled (0 = disabled)
-     9: search timeout, in sec (unsigned long int)
-     */
-    this.addChildProcess([fileA, fileB, outfile, "0"]);
+AutoDiff.buildJsonList = function(obj) {
+    let tab = "";
+    let list = [];
 
-    /* DEFUNCT - MOVED TO C++ EXECUTABLE
-    var a = fs.readFileSync(fileA, {encoding:"utf8"}).split(/[\r\n]+/);
-    var b = fs.readFileSync(fileB, {encoding:"utf8"}).split(/[\r\n]+/);
-    return this.listDiff(a, b); */
-}
-
-// Note: This algorithm implementation has a good deal of redundancy, for
-// any place where we could do a
-/* DEFUNCT - MOVED TO C++ EXECUTABLE
-AutoDiff.arrayDepthFirst = function(a, b, diff, x, y, n, m, count, best) {
-    var temp_diff;
-    var temp_count;
-    var best_diff = this.cloneObj(diff);
-    var result;
-    var new_count;
-    // Stop if we reach end of edit path, or if we know this path
-    //   is already not the best path (current change count better than
-    //   best change count found so far)
-    if (((x == n) && (y == m)) || ((count > best) && (best > 0))) {
-        return [count, diff];
-    }
-
-    // TRY MODIFY 1st (modify contains "equal" as a subcase)
-    // All diffs use source-side indices, for consistency
-
-    // Try modifying current index of a
-    //   to reflect current index of b
-
-    // Reset to try taking this approach at the index
-    if ((x < n) && (y < m)) {
-        temp_diff = this.cloneObj(diff);
-        temp_count = count;
-        //Modify ENtry has check for/handles equality, as well
-        result = this.modifyEntry(a[x], b[y], count, best);
-        //If a[x] == b[y], no need to record modification
-        if (result[0] > 0) {
-            temp_count += result[0]; temp_diff['m'][x] = result[1];
-        }
-        if ((temp_count < best) || (best < 0)) {
-            result = this.arrayDepthFirst(a, b, temp_diff, x+1, y+1, n, m, temp_count, best);
-            if ((result[0] < best) || (best < 0)) {
-                best = result[0]; best_diff = result[1];
+    // Below, use of JSON.stringy on strings "undoes" certain simplifications
+    //  that occur on parse - for instance, it automattically adds quotation marks
+    //  characters on the ends, and it adds in escape characters as needed.
+    // The set of characters "\\bin" gets parsed into the string of 4 characters:
+    //  \ b i n     or   [\, b, i, n] 
+    // To get put onto the page/file the array of characters we originally had that
+    //  encode that string, JSON.stringify("\bin") will produce '"\\bin"' or
+    //  [", \, \, b, i, n, "]
+    function buildRecurse(list, obj, tab) {
+        if (Array.isArray(obj)) {
+            list.push(tab+"[");
+            //indent and add elements
+            for (let i = 0; i < obj.length; i++) {
+                //write the entry, which itself may be complex
+                buildRecurse(list, obj[i], " "+tab);
+                //for all but last, put a trailing comma to indicate it is one
+                // member of the array
+                if (i != obj.length - 1) {
+                    list[list.length - 1] += ",";
+                }
+            }
+            list.push(tab+"]");
+        } else if (AutoDiff.isObject(obj)) {
+            list.push(tab+"{");
+            const keys = Object.getOwnPropertyNames(obj).sort();
+            for (let i = 0; i < keys.length; i++) {
+                //write the key on its own line
+                let key = keys[i];
+                list.push(" "+tab+JSON.stringify(key)+":");
+                //write the value, which itself may be complex
+                buildRecurse(list, obj[key], " "+tab);
+                //for all but last, put a trailing comma to indicate it is one
+                // member of the object
+                if (i != keys.length - 1) {
+                    list[list.length - 1] += ",";
+                }
+            }
+            list.push(tab+"}");
+        } else {
+            // some primitive
+            if ((typeof obj == "string") || (obj instanceof String)) {
+                list.push(tab+JSON.stringify(obj));
+            } else {
+                list.push(tab+String(obj)); 
             }
         }
     }
 
-    // TRY ADD (Prioritize add over delete)
-    // Reset to try taking this approach at the index
-    if (y < m) {
-        temp_diff = this.cloneObj(diff);
-        temp_count = count;
-        temp_count += this.countLeaves(b[y]);
-        if ((temp_count < best) || (best < 0)) {
-            // Can have multiple subsequent adds in a row/at the same source index, so we keep a list
-            if (x in temp_diff['+']) { temp_diff['+'][x].push(this.cloneObj(b[y])); }
-            else { temp_diff['+'][x] = [this.cloneObj(b[y])]; }
-            result = this.arrayDepthFirst(a, b, temp_diff, x, y+1, n, m, temp_count, best);
-            if ((result[0] < best) || (best < 0)) { best = result[0]; best_diff = result[1]; }
-        }
-    }
+    buildRecurse(list, obj, tab);
+    return list;
+}
 
-    // Note: Because adds are prioritized, adds are performed BEFORE source index;
-    // ie, if source is "ae", and an add is performed on source index 1,
-    // we end up with "abe"
+//A is original, B is new
+AutoDiff.textDiff = function(fileA, fileB) {
+    var a = fs.readFileSync(fileA, {encoding:"utf8"}).split(/[\r\n]+/);
+    var b = fs.readFileSync(fileB, {encoding:"utf8"}).split(/[\r\n]+/);
+    return this.listDiff(a, b);
+}
 
-    // TRY DELETE
-    // Reset to try taking this approach at the index
-    if (x < n) {
-        temp_diff = this.cloneObj(diff);
-        temp_count = count;
-        // Any listed index is in '-' is deleted
-        temp_count += this.countLeaves(a[x]); temp_diff['-'].push(x);
-        if ((temp_count < best) || (best < 0)) {
-            result = this.arrayDepthFirst(a, b, temp_diff, x+1, y, n, m, temp_count, best);
-            if ((result[0] < best) || (best < 0)) { best = result[0]; best_diff = result[1]; }
-        }
-    }
-
-    // Return best we have found
-    return [best, best_diff];
-} */
-
-// Called by arrayDepthFirst to handle getting any kind of modification
-//   subdiff depending on the types of entries involved
-/* DEFUNCT - MOVED TO C++ EXECUTABLE
-AutoDiff.modifyEntry = function(a, b, count, best) {
-    if (this.checkEquality(a, b)) {
-        return [0, null]; //"null", specifically for a modify, encodes "no change" for this entry
-    }
-
-    if ((Array.isArray(a)) && (Array.isArray(b))) {
-        // Get a subdiff of the array elements; this is a brand new diff
-        //   that is a child of the diff from which this is called, it is
-        //   NOT another step in creating the parent/calling array diff
-        return this.arrayDiff(a, b);
-
-    // If the entries are Objects
-    } else if (
-            (!Array.isArray(a) && !Array.isArray(b)) && 
-            (this.isObject(a) && this.isObject(b))
-          ) {
-        // Get a subdiff of the json entries
-        return this.jsonDiff(a, b, count, best);
-
-    // If the entries are primitives
-    } else if (!this.isObject(a) && !this.isObject(b)) {
-        // Only changing one value
-        count += 1;
-        // The subdiff in this case is just the b (post-patch) value
-        return [count, b];
-    } else {
-        // This is the case where we're coming from an array, not JSON,
-        //   and in one, the element is an array and the other is an object,
-        //   so we do another "drastic modify", where in effect the patcher
-        //   will delete all of a and add in b
-        // Note: this adds redundancy as this will override any situation
-        //   where we would do a delete and then add
-        count += this.countLeaves(a);
-        count += this.countLeaves(b);
-        return [count, this.cloneObj(b)];
-    }
-} */
-
-//AutoDiff.diff = function(fileA, fileB) TODO - DELETE OLD
-AutoDiff.diff = function(fileA, fileB, outfile) {
-    /* Arguments:
-    <0: command name of executable file>
-     1: original version of file (filename string)
-     2: modified version of file (filename string)
-     3: output path (path string)
-     4: 0 = treat the files as newline-delimited text files, 1 = treat the files as JSON
-      - the following will be constant, and supplied by the class later - 
-     5: is eq search optimization enabled (0 = disabled)
-     6: eq search optimization minSize (unsigned int)
-     7: eq search optimization minRatio (double)
-     8: is search timeout enabled (0 = disabled)
-     9: search timeout, in sec (unsigned long int)
-     */
-    this.addChildProcess([fileA, fileB, outfile, "1"]);
-
-    /* DEFUNCT - MOVED TO C++ EXECUTABLE
+//A is original, B is new
+AutoDiff.diff = function(fileA, fileB) {
     var a = JSON.parse(fs.readFileSync(fileA, {encoding:"utf8"}));
     var b = JSON.parse(fs.readFileSync(fileB, {encoding:"utf8"}));
-
-    if (Array.isArray(a) && Array.isArray(b)) {
-        const result = this.arrayDiff(a, b);
-        return result[1];
-    } else if ((!Array.isArray(a) && !Array.isArray(b)) && 
-                (this.isObject(a) && this.isObject(b))) {
-        const result = this.jsonDiff(a, b);
-        return result[1];
-    }
-    console.log("Error - arrived at diff with incompatible types");
-    return null;
-    */
-}
-
-AutoDiff.tryNextProcess = function() {
-	console.log("in Try Next");
-		while (this._activeProcesses < parseInt(this._maxProcesses) && (this._processes.length > 0)) {
-	  	const args = this._processes.pop();
-	  	//We want the file names, and whether it's a JSON or list/line/text file. Other parameters
-	  	//  should be constant throughout an entire project diff
-	  	let exec = path.join(path.dirname(process.mainModule.filename), "jsondiff.exe");
-	  	//exec = "start "+exec;
-	  	//DEBUG
-	  	console.log("Running diff on the following files: "+args[0]+" "+args[1]);
-	  	console.log("Command: "+exec+(args.concat([this._eqOn, this._eqMinSize, this._eqMinRatio,
-	      this._timeoutOn, this._searchTimeout])).join(" "));
-
-			let p = child_process.exec(exec+" "+(args.concat([this._eqOn, this._eqMinSize, this._eqMinRatio,
-	      this._timeoutOn, this._searchTimeout])).join(" "));
-
-			//p.on('close', this.onProcessTerminate2(args));
-
-	  	//let p = child_process.execFile(exec, args.concat([this._eqOn, this._eqMinSize, this._eqMinRatio,
-	    //  this._timeoutOn, this._searchTimeout]), this.onProcessTerminate(args));
-
-			const fileA = args[0];
-			const fileB = args[1];
-			const out = args[2];
-	  	this._running[out] = [p, fileA, fileB];
-	  	this._activeProcesses += 1;
-	  }
-}
-
-AutoDiff.onProcessTerminate = function(args) {
-	const fileA = args[0];
-	const fileB = args[1];
-	const fileC = args[2];
-	return function(error, stdout, stderr) {
-		console.log("I promise that this ran and stuff");
-    console.log(stdout);
-    if (error) {
-    		console.log(stderr);
-        AutoDiff.reportError(fileA, fileB);
-    } else {
-        AutoDiff.reportSuccess(fileA, fileB, fileC);
-    }
-  }
-}
-
-//TODO - more than simply log-and-continue?
-AutoDiff.reportError = function(fileA, fileB) {
-    this._activeProcesses -= 1;
-    console.log("Failed to create diff for: "+fileA+" "+fileB);
-    this.tryNextProcess();
-}
-
-AutoDiff.reportSuccess = function(fileA, fileB, fileC) {
-    this._activeProcesses -= 1;
-    console.log("Successfully created file: "+fileC+" from files "+fileA+" "+fileB);
-    this.tryNextProcess();
-}
-
-AutoDiff.checkDone = function() {
-	return ((this._activeProcesses == 0) && (this._processes.length == 0))
-}
-
-AutoDiff.addChildProcess = function(cpArgs) {
-    this._processes.push(cpArgs);
-    this.tryNextProcess();
-}
-
-AutoDiff.initializeExecArgs = function() {
-    this._eqOn = "0";
-    this._eqMinSize = "30";
-    this._eqMinRatio = "90";
-    this._timeoutOn = "0";
-    this._searchTimeout = "90";
-    this._maxProcesses = "1";
-    this._activeProcesses = 0;
-    this._processes = [];
-    this._running = {};
-}
-
-AutoDiff.setExecArgs = function(args) {
-    //Any that can be defined in textboxes may be null when passed here
-    //All are already strings when passed here (ultimately the .exe call requires string arguments)
-    this._eqOn = args[0];
-    this._eqMinSize = args[1] || this._eqMinSize;
-    this._eqMinRatio = args[2] || this._eqMinRatio;
-    this._timeoutOn = args[3];
-    this._searchTimeout = args[4] || this._searchTimeout;
-    this._maxProcesses = args[5] || this._maxProcesses;
+    return this.jsonDiff(a, b);
 }
 
 AutoDiff.createReqDirectories = function(filepath) {
@@ -4406,70 +4117,127 @@ AutoDiff.getModKey = function() {
 
 AutoDiff.unencryptBytesEqual = function(baseBuffer, patchBuffer, baseKey, patchKey, name) {
     //Whether to decrypt mod/patch file:
-    const needsDecrypt1 = (((name.match(/\.[png|rpgmvp]$/i) && $dataSystem.hasEncryptedImages) ||
-                                                 (name.match(/\.[mp4|ogg|rpgmvo|rpgmvm]$/i) && $dataSystem.hasEncryptedAudio)) &&
+    const needsDecrypt1 = (((name.match(/\.(png|rpgmvp)$/i) && $dataSystem.hasEncryptedImages) ||
+                                                 (name.match(/\.(mp4|ogg|rpgmvo|rpgmvm)$/i) && $dataSystem.hasEncryptedAudio)) &&
                                                  (patchKey != null));;
-    //Wheter to decrypt base file:
+    //Whether to decrypt base file:
     const sys = JSON.parse(fs.readFileSync(path.join(ModManager._base, 'data', 'System.json'), {encoding:'utf8'})); //Assumes data file exists
-    const needsDecrypt2 = (((name.match(/\.[png|rpgmvp]$/i) && sys.hasEncryptedImages) ||
-                                                 (name.match(/\.[mp4|ogg|rpgmvo|rpgmvm]$/i) && sys.hasEncryptedAudio)) &&
+    const needsDecrypt2 = (((name.match(/\.(png|rpgmvp)$/i) && sys.hasEncryptedImages) ||
+                                                 (name.match(/\.(mp4|ogg|rpgmvo|rpgmvm)$/i) && sys.hasEncryptedAudio)) &&
                                                  (baseKey != null));
     //Decrypt modded file contents as needed
     if (needsDecrypt1) {
-    let header = new Uint8Array(patchBuffer, 0, Decrypter._headerlength);
-    let i;
-    let ref = Decrypter.SIGNATURE + Decrypter.VER + Decrypter.REMAIN;
-    let refBytes = new Uint8Array(16);
-    for (i = 0; i < Decrypter._headerlength; i++) {
-        refBytes[i] = parseInt("0x" + ref.substr(i * 2, 2), 16);
-    }
-    for (i = 0; i < Decrypter._headerlength; i++) {
-        if (header[i] !== refBytes[i]) {
-            throw new Error("Header is wrong");
-        }
-    } 
-
-    patchBuffer = Decrypter.cutArrayHeader(patchBuffer, Decrypter._headerlength);
-    let view = new DataView(patchBuffer);
-    Decrypter._encryptionKey = patchKey;
-    if (patchBuffer) {
-        let byteArray = new Uint8Array(patchBuffer);
+        let header = new Uint8Array(patchBuffer, 0, Decrypter._headerlength);
+        let i;
+        let ref = Decrypter.SIGNATURE + Decrypter.VER + Decrypter.REMAIN;
+        let refBytes = new Uint8Array(16);
         for (i = 0; i < Decrypter._headerlength; i++) {
-            byteArray[i] = byteArray[i] ^ parseInt(Decrypter._encryptionKey[i], 16);
-            view.setUint8(i, byteArray[i]);
+            refBytes[i] = parseInt("0x" + ref.substr(i * 2, 2), 16);
         }
-    }
+        for (i = 0; i < Decrypter._headerlength; i++) {
+            if (header[i] !== refBytes[i]) {
+                throw new Error("Header is wrong");
+            }
+        } 
+
+        patchBuffer = Decrypter.cutArrayHeader(patchBuffer, Decrypter._headerlength);
+        let view = new DataView(patchBuffer.buffer);
+        Decrypter._encryptionKey = patchKey;
+        if (patchBuffer) {
+            let byteArray = new Uint8Array(patchBuffer);
+            for (i = 0; i < Decrypter._headerlength; i++) {
+                byteArray[i] = byteArray[i] ^ parseInt(Decrypter._encryptionKey[i], 16);
+                view.setUint8(i, byteArray[i]);
+            }
+        }
     }
     //Decrypt base file contents as needed
     if (needsDecrypt2) {
-    let header = new Uint8Array(baseBuffer, 0, Decrypter._headerlength);
-    let i;
-    let ref = Decrypter.SIGNATURE + Decrypter.VER + Decrypter.REMAIN;
-    let refBytes = new Uint8Array(16);
-    for (i = 0; i < Decrypter._headerlength; i++) {
-        refBytes[i] = parseInt("0x" + ref.substr(i * 2, 2), 16);
-    }
-    for (i = 0; i < Decrypter._headerlength; i++) {
-        if (header[i] !== refBytes[i]) {
-            throw new Error("Header is wrong");
-        }
-    } 
-
-    baseBuffer = Decrypter.cutArrayHeader(baseBuffer, Decrypter._headerlength);
-    let view = new DataView(baseBuffer);
-    Decrypter._encryptionKey = baseKey;
-    if (baseBuffer) {
-        let byteArray = new Uint8Array(baseBuffer);
+        let header = new Uint8Array(baseBuffer, 0, Decrypter._headerlength);
+        let i;
+        let ref = Decrypter.SIGNATURE + Decrypter.VER + Decrypter.REMAIN;
+        let refBytes = new Uint8Array(16);
         for (i = 0; i < Decrypter._headerlength; i++) {
-            byteArray[i] = byteArray[i] ^ parseInt(Decrypter._encryptionKey[i], 16);
-            view.setUint8(i, byteArray[i]);
+            refBytes[i] = parseInt("0x" + ref.substr(i * 2, 2), 16);
         }
-    }
+        for (i = 0; i < Decrypter._headerlength; i++) {
+            if (header[i] !== refBytes[i]) {
+                throw new Error("Header is wrong");
+            }
+        } 
+
+        baseBuffer = Decrypter.cutArrayHeader(baseBuffer, Decrypter._headerlength);
+        let view = new DataView(baseBuffer.buffer);
+        Decrypter._encryptionKey = baseKey;
+        if (baseBuffer) {
+            let byteArray = new Uint8Array(baseBuffer);
+            for (i = 0; i < Decrypter._headerlength; i++) {
+                byteArray[i] = byteArray[i] ^ parseInt(Decrypter._encryptionKey[i], 16);
+                view.setUint8(i, byteArray[i]);
+            }
+        }
     }
     
     baseBuffer = new Buffer(baseBuffer);
     patchBuffer = new Buffer(patchBuffer);
     return patchBuffer.equals(baseBuffer);
+}
+
+AutoDiff.encryptNameMirror = function(filename) {
+    const breakpoint = filename.lastIndexOf('.');
+    if (breakpoint < 0) return null;
+    let file = filename.substring(0,breakpoint);
+    const ext = filename.substring(breakpoint+1);
+    switch (ext) {
+        case 'png': return (file + '.rpgmvp');
+        case 'm4a': return (file + '.rpgmvm');
+        case 'ogg': return (file + '.rpgmvo');
+        case 'rpgmvm': return (file + '.m4a');
+        case 'rpgmvp': return (file + '.png');
+        case 'rpgmvo': return (file + '.ogg');
+    }
+    //Was not an encrypted or encrypt-able filetype
+    return null;
+}
+
+AutoDiff.readProperVersion = function(filename, encoding) {
+    if (fs.existsSync(filename)) {
+        return fs.readFileSync(filename, encoding)
+    } else {
+        return fs.readFileSync(this.encryptNameMirror(filename), encoding);
+    }
+}
+
+AutoDiff.handleTasks = function() {
+    const DIFF = 0;
+    const TEXTDIFF = 1;
+    const OVERWRITE = 2;
+
+    const task = this.taskList.shift();
+    if (!task) { return true; }
+
+    const taskType = task[0];
+    const origFile = task[1];
+    const patchFile = task[2];
+    const newFile = task[3];
+
+    this.createReqDirectories(newFile);
+    if (taskType == DIFF) {
+        AutoDiffLogger.reportStart(origFile, patchFile, newFile);
+        let diff = this.diff(origFile, patchFile);
+        fs.writeFileSync(newFile, JSON.stringify(diff), {encoding: 'utf8'});
+        AutoDiffLogger.reportSuccess(origFile, patchFile, newFile);
+    } else if (taskType == TEXTDIFF) {
+        AutoDiffLogger.reportStart(origFile, patchFile, newFile);
+        let diff = this.textDiff(origFile, patchFile);
+        fs.writeFileSync(newFile, JSON.stringify(diff), {encoding: 'utf8'});
+        AutoDiffLogger.reportSuccess(origFile, patchFile, newFile);
+    } else if (taskType == OVERWRITE) {
+        fs.writeFileSync(newFile, this.readProperVersion(patchFile, {encoding: 'utf8'}));
+        AutoDiffLogger.reportOverwrite(patchFile, newFile);
+    }
+
+    return false;
 }
 
 AutoDiff.createPatch = function(config, name) {
@@ -4486,7 +4254,11 @@ AutoDiff.createPatch = function(config, name) {
   const useList = config['explicit_list'];
   const orig_key = this.getOrigKey();
   const mod_key = this.getModKey();
+  this.taskList = [];
 
+  const DIFF = 0;
+  const TEXTDIFF = 1;
+  const OVERWRITE = 2;
 
   if (useList) {
     let list = [];
@@ -4500,13 +4272,13 @@ AutoDiff.createPatch = function(config, name) {
     function fileDiffSequential(fileList, parentPath="") {
         const src = path.join(ModManager._base,parentPath);
         for (var k in list) {
-        		const file = list[k];
+            const file = list[k];
 
             const orig = path.join(src, file);
             const patch = path.join(curr, file);
 
-            const orig_bytes = fs.readFileSync(orig);
-            const patch_bytes = fs.readFileSync(patch);
+            const orig_bytes = this.readProperVersion(orig);
+            const patch_bytes = this.readProperVersion(patch);
             if (!orig_bytes.equals(patch_bytes)) {
                 //If the file to be compared is a JSON object
                 if (file.match(/\.json$/i)) {
@@ -4514,12 +4286,17 @@ AutoDiff.createPatch = function(config, name) {
                     const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
                     //Make sure requisite parent directory hierarchy exists
                     //  that the file will be written into
+
+                    this.taskList.push([DIFF, orig, patch, newfile]);
+                    /*
                     this.createReqDirectories(newfile);
-                    this.diff(orig, patch, newfile);
-                    //let diff = this.diff(orig, patch); TODO: DELETE, OLD WAY, pre executable
-                    //fs.writeFileSync(newfile, JSON.stringify(diff), {encoding: 'utf8'});
+                    AutoDiffLogger.reportStart(orig, patch, newfile);
+                    let diff = this.diff(orig, patch);
+                    fs.writeFileSync(newfile, JSON.stringify(diff), {encoding: 'utf8'});
+                    AutoDiffLogger.reportSuccess(orig, patch, newfile);
+                    */
                 //If the file to be compared is an asset file
-                } else if (file.match(/\.[png|mp4|ogg|rpgmvp|rpgmvo|rpgmvm]$/i)) {
+                } else if (file.match(/\.(png|mp4|m4a|ogg|rpgmvp|rpgmvo|rpgmvm)$/i)) {
                     //Make sure that the difference in bytes between new and old isn't just
                     //  due to encryption differences
                     if (this.unencryptBytesEqual(orig_bytes, patch_bytes, orig_key, mod_key, file)) continue;
@@ -4527,17 +4304,26 @@ AutoDiff.createPatch = function(config, name) {
                     const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
                     //Make sure requisite parent directory hierarchy exists
                     //  that the file will be written into
+                    this.taskList.push([OVERWRITE, orig, patch, newfile])
+                    /*
                     this.createReqDirectories(newfile);
                     fs.writeFileSync(newfile, patch_bytes);
-                  //If the file to be compared is a text or script file
-                } else if (file.match(/\.[txt|csv]$/i) || file.match(/\.js$/i)){
+                    AutoDiffLogger.reportOverwrite(orig, newfile);
+                    */
+                //If the file to be compared is a text or script file
+                } else if (file.match(/\.(txt|csv)$/i) || file.match(/\.js$/i)){
                     const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
                     //Make sure requisite parent directory hierarchy exists
                     //  that the file will be written into
+
+                    this.taskList.push([TEXTDIFF, orig, patch, newfile])
+                    /*
                     this.createReqDirectories(newfile);
-                    this.textDiff(orig, patch, newfile);
-                    //let diff = this.textDiff(orig, patch); TODO: DELETE, OLD WAY, pre executable
-                    //fs.writeFileSync(newfile, JSON.stringify(diff), {encoding: 'utf8'});
+                    AutoDiffLogger.reportStart(orig, patch, newfile);
+                    let diff = this.textDiff(orig, patch);
+                    fs.writeFileSync(newfile, JSON.stringify(diff), {encoding: 'utf8'});
+                    AutoDiffLogger.reportSuccess(orig, patch, newfile);
+                    */
                 }
             }
         }
@@ -4560,61 +4346,73 @@ AutoDiff.createPatch = function(config, name) {
         // include mechanisms to signal to actively delete those files
         // when the patch is applied.
         if (fs.existsSync(curr)) {
-            console.log(curr);
             files = fs.readdirSync(curr);
             files.forEach(function(file, index) {
-            		//Skip this script and files added to make this one work
-            		if (ModManager._dependencies.includes(file)) { return; }
+                    //Skip this script and files added to make this one work
+                    if (ModManager._dependencies.includes(file)) { return; }
 
                 if (fs.lstatSync(path.join(parentPath, file)).isDirectory()) {
                     fileDiffRecurse(path.join(parentPath, file));
                 } else {
-                    //If this file also exists
-                    if (fs.existsSync(path.join(src, file))) {
+                    //If this file also exists (as an encrypted, or unencrypted version)
+                    if (fs.existsSync(path.join(src, file)) || fs.existsSync(this.encryptNameMirror(path.join(src, file)))) {
                         //If the filetype is not one we're interested in, we can skip the comparison
-                        if (file.match(/\.[png|mp4|ogg|rpgmvp|rpgmvo|rpgmvm]$/i) && !assetCompare) { return; }
+                        if (file.match(/\.(png|mp4|m4a|ogg|rpgmvp|rpgmvo|rpgmvm)$/i) && !assetCompare) { return; }
                         if (file.match(/\.js$/i) && !scriptCompare) { return; }
 
                         const orig = path.join(src, file);
                         const patch = path.join(curr, file);
 
-                        const orig_bytes = fs.readFileSync(orig);
-                        const patch_bytes = fs.readFileSync(patch);
+                        const orig_bytes = this.readProperVersion(orig);
+                        const patch_bytes = this.readProperVersion(patch);
                         if (!orig_bytes.equals(patch_bytes)) {
-                            console.log(file);
                             if (file.match(/\.json$/i)) {
                                 //Copy the diff of the two files named "file" into the patch folder
                                 const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
                                 //Make sure requisite parent directory hierarchy exists
                                 //  that the file will be written into
-                                this.createReqDirectories(newfile);
-                                this.diff(orig, patch, newfile);
-                                //let diff = this.diff(orig, patch); TODO: DELETE, OLD WAY, pre executable
-                                //fs.writeFileSync(newfile, JSON.stringify(diff), {encoding: 'utf8'});
 
+                                this.taskList.push([DIFF, orig, patch, newfile])
+                                /*
+                                this.createReqDirectories(newfile);
+                                AutoDiffLogger.reportStart(orig, patch, newfile);
+                                let diff = this.diff(orig, patch);
+                                fs.writeFileSync(newfile, JSON.stringify(diff), {encoding: 'utf8'});
+                                AutoDiffLogger.reportSuccess(orig, patch, newfile);
+                                */
                             //If asset compare flag is checked, we can copy in new/changed assets;
                             //  files with extensions that are not common are copied regardless, to be safe
-                            } else if (file.match(/\.[png|mp4|ogg|rpgmvp|rpgmvo|rpgmvm]$/i)) {
+                            } else if (file.match(/\.(png|mp4|m4a|ogg|rpgmvp|rpgmvo|rpgmvm)$/i)) {
                                 //Make sure that the difference in bytes between new and old isn't just
-                            //  due to encryption differences
-                            if (this.unencryptBytesEqual(orig_bytes, patch_bytes, orig_key, mod_key, file)) return;
-                                //Copy new image/audio/asset into
-                                const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
-                                //Make sure requisite parent directory hierarchy exists
-                                //  that the file will be written into
-                                this.createReqDirectories(newfile);
-                                fs.writeFileSync(newfile, patch_bytes);
+                                //  due to encryption differences
+                                if (this.unencryptBytesEqual(orig_bytes, patch_bytes, orig_key, mod_key, file)) {
+                                    //Copy new image/audio/asset into
+                                    const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
+                                    //Make sure requisite parent directory hierarchy exists
+                                    //  that the file will be written into
 
+                                    this.taskList.push([OVERWRITE, orig, patch, newfile])
+                                    /*
+                                    this.createReqDirectories(newfile);
+                                    fs.writeFileSync(newfile, patch_bytes);
+                                    AutoDiffLogger.reportOverwrite(orig, newfile);
+                                    */
+                                }
                             //If script flag is checked, we can copy in new/changed assets;
                             //  files with extensions that are not common are copied regardless, to be safe
-                            } else if (file.match(/\.[txt|csv]$/i) || file.match(/\.js$/i)) {
+                            } else if (file.match(/\.(txt|csv)$/i) || file.match(/\.js$/i)) {
                                 const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
                                 //Make sure requisite parent directory hierarchy exists
                                 //  that the file will be written into
+
+                                this.taskList.push([TEXTDIFF, orig, patch, newfile])
+                                /*
                                 this.createReqDirectories(newfile);
-                                this.textDiff(orig, patch, newfile);
-                                //let diff = this.textDiff(orig, patch); TODO: DELETE, OLD WAY, pre executable
-                                //fs.writeFileSync(newfile, JSON.stringify(diff), {encoding: 'utf8'});
+                                AutoDiffLogger.reportStart(orig, patch, newfile);
+                                let diff = this.textDiff(orig, patch);
+                                fs.writeFileSync(newfile, JSON.stringify(diff), {encoding: 'utf8'});
+                                AutoDiffLogger.reportSuccess(orig, patch, newfile);
+                                */
                             }
 
                         //File bytes match in both modded and base directory:
@@ -4626,35 +4424,28 @@ AutoDiff.createPatch = function(config, name) {
                     } else {
                           //If asset compare flag is checked, we can copy in new/changed assets;
                           //  files with extensions that are not common are copied regardless, to be safe
-                          if (!file.match(/\.[png|mp4|ogg|rpgmvp|rpgmvo|rpgmvm]$/i) || assetCompare) {
+                          if (!file.match(/\.(png|mp4|m4a|ogg|rpgmvp|rpgmvo|rpgmvm)$/i) || assetCompare) {
                             //Copy it into the patch, it's new content
-                            const newfile = path.join(ModManager._path, name, parentPath, file);
+                            const patch = path.join(curr, file);
+                            const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
                             //Make sure requisite parent directory hierarchy exists
                             //  that the file will be written into
+
+                            this.taskList.push([OVERWRITE, "", patch, newfile])
+                            /*
                             this.createReqDirectories(newfile);
-                            fs.writeFileSync(newfile, fs.readFileSync(path.join(curr, file), {encoding: 'utf8'}));
+                            fs.writeFileSync(newfile, this.readProperVersion(patch, {encoding: 'utf8'}));
+                            AutoDiffLogger.reportOverwrite(patch, newfile);
+                            */
                           }
                     }
-                }
-            }.bind(this));
+            }
+        }.bind(this));
         }
     }
     fileDiffRecurse = fileDiffRecurse.bind(this);
     //Perform diff from roots
     fileDiffRecurse();
-  }
-
-  console.log("Ok, now we wait...")
-  //Wait until all process calls have terminated - "collect" threads
-  while (!this.checkDone()) {
-    	for (let outfile in this._running) {
-    		let p = this._running[outfile];
-    		if (fs.existsSync(outfile)) {
-    				p[0].unref();
-			      this.reportSuccess(p[1], p[2], outfile);
-			      delete this._running[outfile];
-    			}
-    	}
   }
 }
 
@@ -4664,6 +4455,33 @@ Array.prototype.equals = function (arr) {
     return this.length == arr.length && this.every((u, i) => u === arr[i]);
 }
 
+//TODO - save convert: thankfully self-switches are indexed by event ids, which shouldn't be changed easily,
+//   so this is the best heuristic we could hope for.
+//  The bad news is, there's still possible ways to design a game patch where this doesn't work. If there
+//  are events A and B, and new event C that's only in the patch, there may be self-switches in all three,
+//  but playing the way the game flows means that in the course of setting the switches in A and/or B,
+//  something triggered the switch in C. But it will default to have its switches off, while A and B will
+//  have the save data converted and push the play "past" the C checkpoint, locking progression
+
+//TODO - during "load Save" and "New Game", load scripts in plugin file, do plugins/pluginManager load
+//  of patch plugins
+
+//TODO - change DataManager._version and stuff to use a relative path, so that saves don't break if for
+// some reason they move the folder
+//  -> test this works
+//  TODO - test that special weeding out of functions in js files when you patch works
+//  TODO - add object method define weeding
+//  TODO - look at how MadeWithMv dodges my filter, see if it makes sense to do anything about that
+
+//TODO - Another weakness was discovered in the "modded script sanitization" approach: if a core ("rpg_") script
+//  (not a plugin) is modified in the plugin, then any function in it that has ALREADY been modified by a
+//  vanilla plugin won't match, even if it actually isn't changed when compared to the corresponding function
+//  in the corresponding vanilla source file. Meanwhile, the plugin that, in vanilla, changes the function,
+//  might not be changed by the mod. Therefore, when it loads the mod, it loads the rpg base file, reverting
+//  some functions, and never loads a plugin over it to re-modify them.
+// TODO - in the attempted fix, the problem is that we're comparing indices into the STRING that represents
+//   the file, against an index into the array that comes from .split(\n)'ing that string. Different units,
+//   that aren't easy to convert between
 
 //Save convert TODOs: so I had to get rid of "ImageManager.clear()" to get more of the save files
 // to have characters drawn... so I need a way of either forcing it to not shortcut to a bitmap
@@ -4675,7 +4493,9 @@ Array.prototype.equals = function (arr) {
 // patch/version of the currently-top-row/showing save file in the list - they all get drawn or
 // are invisible based on that. Why? Also - why are they invisible at all...? Happened less when I
 // got rid of ImageManager.clear() - but not completely, the bottom two when I first enter the menu
-// still don't have a party drawn.
+// still don't have a party drawn. Answer: they were invisible because the bitmaps were loaded asynchronously,
+// and didn't load in time for the "draw" or refresh call. Hence why another draw/refresh call on that
+// image/bitmap would actually cause it to appear.
 // potential idea: put a check into "drawCharacter" that injects the url with the patch if the window
 // is a savefilelist type... eh, might not help at all...
 
@@ -4702,17 +4522,12 @@ Array.prototype.equals = function (arr) {
 //   - implemented, concept has been tested in practice, but final implementation needs test
 
 //TODO: main.js decrypter script currently changes file size when it decrypts, need to fix
-//TODO: add in toggle in create patch for doing character-by-character diff instead of line by line
-//TODO: change description/overview text at the top - no more "tags", all auto-diff,
-//  explain the toggles, explain how to do convert.js
 //TODO: test menu for transitioning save files across patches
-//TODO: test line-based text diffing for scripts; implement image diffing
 //TODO: right now, in theory, a "patched instance" can include multiple mods/patches.
 //  In reality, this won't work currently because the mods/patches will have different
 //  decrypt keys for their images, and likely the latest one added will override all
 //  others. Furthermore, if base game is encrypted but modder leaves his images unencrypted
 //  (mixed bag of encryption) that will also fail, currently, I think
-//TODO: test applying patch
 //TODO: make sure that when loading a save, it loads database info from the correct patch...
 //  but it's loading it from a save, and the save will have been made based on patch info, so no need to worry
 //  about potential patch-hopping...? Wait, no that's what this bullet is about - make sure that the things NOT
@@ -4724,8 +4539,7 @@ Array.prototype.equals = function (arr) {
 //  about that, see if we can *remove* or unload the script resources. If that's REALLY not possible, then we have
 //  to set a flag in ModManager when the scripts are loaded/added and deactivate scripts in the mod window if that
 //  flag is set.
-//TODO: diff-creating tool - needs more test
-//   - test with explicit list option as well
+//TODO: diff-creating tool - test with explicit list option
 //TODO: ideally? add progress bar to patch-apply, patch init, and patch export.
 //TODO: fix cursor thing when MOG is used
 //Apparently " * @type file" is a thing, account for this in scripts?
