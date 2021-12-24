@@ -17,6 +17,9 @@
  * TO USE (INSTALL) A PATCH:
  *   3) Create a directory in the mods folder called "patches".
  *   4) Copy the provided patch folder into the "patches" folder.
+ *       a) Unzip the patch if necessary (if it is a .zip, .tg, .tar, .rar, etc)
+ *       b) Make sure that it is set up so that the folder hierarchy goes:
+ *        .../mods/patches/[patchName]/{data/, img/, audio/, etc} 
  *   5) Launch the game, navigate down to the "Mods" option, and select it.
  *   6) Select "Patches".
  *   7) Navigate the patch list on the left to find your desired patch.
@@ -74,20 +77,28 @@
  *   7) Within the Mods menu, navigate to the "Create" tab on the far right.
  *   8) In this menu, you will see a textbox, three toggles beneath it, and a button
  *    to begin exporting.
- *      i) The textbox is where you provide the name of the patch; it determines
+ *      a) The textbox is where you provide the name of the patch; it determines
  *        the name of the folder in which the patch will be generated. 
- *      ii) The top toggle, if enabled, means that you will provide an explicit list
+ *      b) The top toggle, if enabled, means that you will provide an explicit list
  *        (as an array) that contains the files that you want to be diffed and included
  *        in the patch. Otherwise, when the diff occurs, every file under every folder
  *        will be analyzed (subject to the next two toggles). By default, the name of
  *        the list file it expects is LIST.txt, and it should be located in the "mods"
  *        folder.
  *        IMPORTANT NOTE: within the list file, you must provide filepaths to the file.
- *        it does not suffice to merely give the filename.
- *      iii) The second, if turned on, means that you want it to scan the image, audio,
+ *        it does not suffice to merely give the filename. Furthermore, it expects the
+ *        file to be written as a JSON-formatted array. That means paths are strings
+ *        (bookended by quotes), remember to escape any backslashes, and the entire list
+ *        should be comma-separated and bookended by square brackets.
+ *        ex:
+ *         [
+ *          "\\data\\System.json",
+ *          "\\img\\characters\\Actor1.rpgmvp"
+ *         ]
+ *      c) The second, if turned on, means that you want it to scan the image, audio,
  *        and video files. By default, the patch only looks at data files (map data,
  *        database info like party members and enemies, etc).
- *      iv) The third toggle, if turned on, means that you want it to scan .js files
+ *      d) The third toggle, if turned on, means that you want it to scan .js files
  *        (scripts and plugins). By default, the patch only looks at data files (map
  *        data, database info like party members and enemies, etc).
  *   9) When you are ready to export, enter a valid folder name in the textbox and,
@@ -153,7 +164,21 @@
  *    modded assets you use are modified version of once-encrypted assets, you should encrypt
  *    your project before creating and distributing the patch. If you choose to encrypt, it
  *    MUST be done BEFORE the patch is created.
- *   2) It is heavily advised, that if you plan on modifying how the core codebase of RPG Maker
+ *   2) If you are using any plugins that work with note tags (a lot of Yanfly plugins do this),
+ *    or if this script causes a problem when you try to start a new game, it may be because many
+ *    plugins do not expect the database files to be loaded more than once. Look for a function
+ *    called DataManager.isDatabaseLoaded that they will often override, and in that funtion there
+ *    will be a variable exclusive to their plugin; there will be an "if" condition that checks
+ *    for the variable to not be true (!their_var) and in that conditional, that variable will
+ *    be set to "true". Copy the variable name, and set it to false ("their_var = false;"), and
+ *    add that line to the "MVMM_resetLatches" function below.
+ *   3) It is possible that some assets will be excluded from your patch if they have bad or
+ *    corrupted headers; it is recommended, to help avoid this, that you DO NOT tamper with
+ *    Decrypter.SIGNATURE, Decrypter.VER, or Decrypter.REMAIN in rpg_core.js. If you get a lot
+ *    of corrupted file headers or the differ is being stubborn about comparing encrypted assets,
+ *    but you want it to let those assets through anyway, try changing ModManager._checkAssetHeaders
+ *    to "false" (no quotes) below.
+ *   4) It is heavily advised, that if you plan on modifying how the core codebase of RPG Maker
  *    MV works, you DO NOT modify any of the primary files. These are the files with "rpg" at
  *    the start of their name (in addition to "main.js"). Please only modify or add js files
  *    that are in the js folder.
@@ -169,42 +194,6 @@
  *    file have not been modified. Those functions get reset when this core file is loaded again,
  *    overwriting any changes enacted by the plugins.
  *
- * =============================================================================
- * ** SCRIPTS **
- * =============================================================================
- *
- * SCRIPTS vs PATCHES
- *   There are two ways to mod a game instance. Scripts are essentially plugins,
- * but with a separate ini (scripts.js) that is managed here, and not by RPGM. When you
- * change script settings, those settings are saved across play sessions, and the active
- * scripts will affect/apply to ANY AND ALL GAME/SAVE STATES you have. Good candidates
- * for scripts might be: combat or menu overhauls, additional effects and sounds - 
- * changes to the game system, not the level data.
- *   Patches, meanwhile, represent potential changes to the game data itself. You have
- * to use the mod manager to generate a patched instance of the game, and once you have
- * generated one, you can then choose to start a game on that patched instance of the game.
- * Once you start a game, you cannot switch patches; loading a game from a different patch
- * should automatically switch you back to that save state, within that patch.
- *   The primary use case of this mv_mm script deals with patches. Most people will have
- * no use for the scripts features. The only real advantage of the scripts menu is the
- * ability to configure parameters from within a running instance of the game.
- *   WARNING: because of the way that script resources are loaded, and because this functionality
- * became less important throughout development and support was dropped, scripts that are turned
- * on through this mechanism will not truly be "turned off" until the game is restarted.
- *
- * TO USE A SCRIPT:
- * 3) create a directory in the mods folder called "scripts".
- * 4) copy the script file (.js) into the "scripts" folder.
- * 5) launch the game, navigate down to the "Mods" option, and select it.
- * 6) select "Scripts".
- * 7) navigate to a desired script; 'enable' turns the script on or off.
- * 8) select parameters to the script with the parameter dropdown.
- * 9) for a given parameter, the description box should give a description
- *   when available. Use the input window to adjust the value of the parameter,
- *   and the Save button to save changed values.
- * 10) assuming you have been saving your changes, press escape until you return
- *   to the title menu. Scripts will take effect when you load a game or start
- *   a new one.
  *
  * =============================================================================
  * ** CONFLICTS **
@@ -221,6 +210,7 @@
  * - Decrypter.decryptHTML5Audio
  * - WebAudio.prototype._load
  * - WebAudio.prototype._onXhrLoad
+ * - Decrypter.decryptImg
  * - Decrypter.decryptArrayBuffer
  *
  * --------- Save List Drawing -------------------------------------------------
@@ -232,7 +222,23 @@
  * - Window_SavefileList.prototype.drawPartyCharacters
  * - Scene_Load.prototype.onSavefileOk
  *
- * =============================================================================
+ */
+
+/* THIS_IS_THE_LATCH_RESET */
+
+function MVMM_resetLatches() {
+    /* The following are examples of latches that other plugins might introduce that
+     * you have to unlatch whenever you begin loading the database */
+    /*
+    Yanfly._loaded_YEP_EquipCore = false;
+    Yanfly.YEP_X_AttachAugments = false;
+    SRD.notetagsLoaded = false;
+    Yanfly._loaded_YEP_AutoPassiveStates = false;
+    Yanfly._loaded_YEP_BattleAICore = false;
+    */
+}
+
+/* =============================================================================
  * ** WARNINGS **
  * =============================================================================
  * - The script parameter parser assumes that any parameter that utilizes "On"/"Off"
@@ -242,9 +248,8 @@
  *   script will be fully deactivated in your current session - in fact, it is unlikely
  *   that it will not still have some lingering effects. Once you have entered into a game
  *   with an active script, you MUST restart the game to clear/disable the active script.
- * - Currently, script load order is not obviously integrated. Once scripts.js has been created,
- *   you can change the order of the dicts/entries to reflect the script load order you desire.
- *   They are loaded in the order listed in the file.
+ * - Any behavior in scripts that depends on code that runs before plugins are loaded
+ *   WILL NOT WORK in a mod installation/patched instance of the game.
  * - When launching, IF you partially created a patch last time, there may be a temp directory. The code attempts to
  *   delete this at launch, BUT will crash and fail IF you have that directory (mods/temp) or any subdirectory
  *   open in Windows Explorer.
@@ -265,7 +270,7 @@ const child_process = require('child_process');
 
 ModManager._path                = path.join(path.dirname(path.dirname(process.mainModule.filename)), 'mods');
 ModManager._base                = path.join(ModManager._path, 'base');
-ModManager._dependencies        = ["mv_mm.js", "window_textbox.js", 'jsondiff.exe','Game.rpgproject'];
+ModManager._dependencies        = ["mv_mm.js", "window_textbox.js", 'Game.rpgproject'];
 ModManager._listFileName        = "LIST.txt";
 ModManager._baseGameText        = "|Base Game|";
 ModManager._tempFolder          = "temp";
@@ -273,13 +278,12 @@ ModManager._installsFolder      = "installs";
 ModManager._patchesFolder       = "patches";
 ModManager._convertFilename     = "convert.js";
 ModManager._gameLoaded          = false;
-ModManager._scripts             = {}; //Maps each script name to Boolean: true for active, false for disabled
-ModManager._parameters          = {}; //Holds parameter settings for each script
-ModManager._patchPlugins        = []; //Remembers which patch's plugins are already loaded, so we don't repeated load them if we reload saves
+ModManager._scripts             = []; //Remembers patch-specific js sources we've
 ModManager._awaiting            = {};
 ModManager._callbacks           = {};
 ModManager._encryptionList      = {}; //Builds a map of modded assets to the proper encryption key to use
 ModManager._encryptionListFile  = 'decryptMap.xx' //arbitrary file extension
+ModManager._checkAssetHeaders   = true;
 
 ModManager.set = function(patchname) {
     this._currPatch = patchname;
@@ -304,9 +308,9 @@ ModManager.quickLoad = false;
 ModManager.preparePatch = function() {
     if (!fs.existsSync(path.join(this._path, this._tempFolder))) {
         fs.mkdirSync(path.join(this._path, this._tempFolder),  { recursive: true });
-        fs.mkdirSync(path.join(this._path, this._tempFolder, 'data'),  { recursive: true });
+        //fs.mkdirSync(path.join(this._path, this._tempFolder, 'data'),  { recursive: true });
         //Copy in base-game info
-        this.deepCopy(path.join(path.dirname(process.mainModule.filename), 'data'));
+        //this.deepCopy(path.join(path.dirname(process.mainModule.filename), 'data'));
     }
 };
 
@@ -335,31 +339,19 @@ ModManager.savePatch = function(outname) {
     if (!fs.existsSync(path.join(this._path, this._installsFolder))) {
         fs.mkdirSync(path.join(this._path, this._installsFolder),  { recursive: true });
     }
+    ModManager.finalScriptPass(outname);
     //should never get here with an outname folder that already exists
     fs.mkdirSync(path.join(this._path, this._installsFolder,outname),  { recursive: true });
     this.deepCopy(path.join(this._path, this._tempFolder), path.join(this._path, this._installsFolder,outname));
-};
-
-//Note: This function is no longer used anywhere
-ModManager.copyAssets = function() {
-    var input = path.join(this._path,this._patchesFolder,this._currPatch); //shave off "/data"
-    if (fs.existsSync(path.join(input, 'assets'))) {
-        for (i in this._tagList) {
-            var tag = this._tagList[i];
-            if (fs.existsSync(path.join(input, 'assets', tag))) {
-                this.deepCopy(path.join(input, 'assets', tag), path.join(this._path, this._tempFolder));
-            }
-        }
-    }
 };
 
 ModManager.deepCopy = function(input, output) {
     output = output || path.join(this._path, 'temp', 'data');
 
     function copyRecurse(input, output) {
-        var items = fs.readdirSync(input);
-        for (var i in items) {
-            var item = items[i];
+        let items = fs.readdirSync(input);
+        for (let i = 0; i < items.length; i++) {
+            let item = items[i];
             if (fs.lstatSync(path.join(input, item)).isDirectory()) {
                 if (!fs.existsSync(path.join(output, item))) {
                     fs.mkdirSync(path.join(output, item), { recursive: true });
@@ -407,9 +399,17 @@ ModManager._currentEncryptionKeys = function(name) {
 //  corresponding encryption key associated with it gets overwritten
 //  in this dictionary
 ModManager.addImageToEncryptList = function(url, patchName, keys) {
+    url = url.replace(/\\/g, '/');
+    url = url.replace('.rpgmvo', '.ogg');
+    url = url.replace('.rpgmvm', '.m4a');
+    url = url.replace('.rpgmvp', '.png');
     this._encryptionList[url] = keys[0];
 }
 ModManager.addAudioToEncryptList = function(url, patchName, keys) {
+    url = url.replace(/\\/g, '/');
+    url = url.replace('.rpgmvo', '.ogg');
+    url = url.replace('.rpgmvm', '.m4a');
+    url = url.replace('.rpgmvp', '.png');
     this._encryptionList[url] = keys[1];
 }
 //This encryption key dictionary leaves a lot to be desired in terms of
@@ -422,14 +422,120 @@ ModManager.dumpEncryptionList = function(dest) {
     fs.writeFileSync(path.join(dest, this._encryptionListFile),
         JSON.stringify(this._encryptionList),
         {encoding: 'utf8'});
+    /* Technically this is encoded in a way that's different from how it
+     * would work in-game */
+    this._encryptionList = {};
 }
 
 ModManager.loadEncryptionList = function(patchName) {
     if (!patchName) return {};
     const listFile = path.join(this._path, this._installsFolder, patchName, this._encryptionListFile);
-    if (!fs.existsSync(listFile)) return {};
+    if (!fs.existsSync(listFile)) {
+        return {};
+    }
     const encryptionList = JSON.parse(fs.readFileSync(listFile, {encoding: 'utf8'}));
     return encryptionList;
+}
+
+//TODO: check if any of this works
+/* This frees up old code/space that was relevant to a different patch of the game,
+ * whenever the player changes patches (via starting a new game or loading a save) */
+ModManager.changeSourceCode = function(oldver, newver) {
+    if (newver == oldver) {
+        return;
+    }
+    for (let i = 0; i < document.body.length; i++) {
+        let script = document.body[i];
+        if (script.src.search(path.join(this._installsFolder, oldver, 'js')) >= 0) {
+            delete document.body[i];
+            document.body.splice(i, 1);
+        }
+    }
+}
+
+
+ModManager.loadScript = function(url) {
+    let script = document.createElement('script');
+    try {
+        script.type = 'text/javascript';
+        script.src = url;
+        script.async = false;
+        script._url = url;
+        document.body.appendChild(script);
+    } catch (error) {
+        console.log(error);
+    }
+    this._scripts.push([script, url]);
+    return script;
+}
+
+ModManager.loadedScript = function(url) {
+    for (let i = 0; i < this._scripts.length; i++) {
+        if (url == this._scripts[i][1]) {
+            return true;
+        }
+    }
+    return false;
+}
+
+ModManager.pluginSetup = function(plugins) {
+    let plugPath = path.join(this._path, this._installsFolder, DataManager._version, 'js', 'plugins'); 
+
+    plugins.forEach(function(plugin) {
+        if (plugin.status) {
+            let name = plugin.name+'.js';
+            name = path.join(plugPath, name);
+            if (fs.existsSync(name) && !this.loadedScript(name)) {
+                PluginManager.setParameters(name, plugin.parameters);
+                this.loadScript(name);
+            }
+        }
+    }, this);
+};
+
+ModManager.loadPlugins = function(prevVer) {
+    if (prevVer == DataManager._version) return;
+
+    let newScripts = path.join(this._path, this._installsFolder, DataManager._version, "js");
+    if (DataManager._version && DataManager._version != "") {
+        if (fs.existsSync(newScripts) && fs.lstatSync(newScripts).isDirectory()) {
+            let scriptfiles = fs.readdirSync(newScripts);
+            for (let i = 0; i < scriptfiles.length; i++) {
+                if (scriptfiles[i].match(/\.js$/) && scriptfiles[i] != "plugins.js") {
+                    let url = path.join(newScripts, scriptfiles[i]);
+                    ModManager.loadScript(url);
+                }
+            }
+        }  
+    }
+
+    /* Don't load plugins multiple times */
+    const pluginPath = path.join(newScripts, "plugins.js");
+    if (fs.existsSync(pluginPath)) {
+        let file = fs.readFileSync(pluginPath,{encoding: 'utf8'});
+        let pluginVarFind = /(?:var|let|const)(?:\s+)\$plugins(?:\s+)=/;
+        let plugs;
+        file.replace(pluginVarFind, function(match, offset, string) {
+            let i = offset;
+            while (string[i] != '[') {
+                i += 1;
+            }
+            let j = i+1;
+            let bracketCount = 1;
+            while (bracketCount > 0) {
+                if (string[j] == '[') {
+                    bracketCount += 1;
+                } else if (string[j] == ']') {
+                    bracketCount -= 1;
+                }
+                j += 1;
+            }
+            plugs = JSON.parse(string.slice(i, j));
+            return "";
+        })
+
+        this.pluginSetup(plugs);
+    }
 }
 
 ModManager._applyPatch = function(name) {
@@ -474,7 +580,7 @@ ModManager._applyPatch = function(name) {
 
                         //Copy new image/audio/asset over
                         } else if (file.match(/\.(png|mp4|ogg|rpgmvp|rpgmvo|rpgmvm)$/i)) {
-                            fs.writeFileSync(targetFile, fs.readFileSync(patchfile));
+                            fs.writeFileSync(targetFile, fs.readFileSync(patchFile));
                             //Map changed assets to different encryption keys; ("no encryption key" may be
                             //  a "new" encryption key; thus we do this even if the extension claims the file
                             //  is not encrypted)
@@ -506,7 +612,13 @@ ModManager._applyPatch = function(name) {
                     //If file is exclusive to the mod/patch, copy it over
                     } else {
                         AutoDiff.createReqDirectories(targetFile);
-                        fs.writeFileSync(targetFile, fs.readFileSync(patchFile));
+                        if (patchFile.match(/\.js$/i)) {
+                            let fileText = fs.readFileSync(patchFile, {encoding: 'utf8'});
+                            fileText = this.applyFunctionSafeties(fileText);
+                            fs.writeFileSync(targetFile, fileText, {encoding: 'utf8'});
+                        } else {
+                            fs.writeFileSync(targetFile, fs.readFileSync(patchFile));
+                        }
                         //Map changed assets to different encryption keys; ("no encryption key" may be
                         //  a "new" encryption key; thus we do this even if the extension claims the file
                         //  is not encrypted)
@@ -551,12 +663,36 @@ ModManager.patchText = function(targetFile, sourceFile, patchFile) {
      * applyFunctionSafeties function definition to better
      * understand why this is here. */
     if (sourceFile.match(/\.js$/i)) {
-        this.applyFunctionSafeties(fileText, this._currPatch);
+        fileText = this.applyFunctionSafeties(fileText);
     }
     //Overwrite file with patched contents
     fs.writeFileSync(targetFile, fileText, {encoding: 'utf8'})
     return true;
-    
+}
+
+ModManager.finalScriptPass = function(installName) {
+    let self = this;
+    let jsReplaceRecurse = function(parentPath="") {
+        var files = [];
+        //path to base files/temp directory
+
+        if (fs.existsSync(parentPath)) {
+            files = fs.readdirSync(parentPath);
+            files.forEach(function(file, index) {
+                if (fs.existsSync(path.join(parentPath, file)) && fs.lstatSync(path.join(parentPath, file)).isDirectory()) {
+                    jsReplaceRecurse(path.join(parentPath, file));
+                } else {
+                    if (file.match(/\.js$/i)) {
+                        fileText = fs.readFileSync(path.join(parentPath, file), {encoding: 'utf8'});
+                        fileText = fileText.replace(/DataManager._version == <replaceText>/g, "DataManager._version == "+JSON.stringify(installName));
+                        fs.writeFileSync(path.join(parentPath, file), fileText, {encoding: 'utf8'});
+                    }
+                }
+            }.bind(this));
+        }
+    }.bind(self);
+    //Perform diff from roots
+    jsReplaceRecurse(path.join(this._path, this._tempFolder));
 }
 
 ModManager.appendContents = function(tempFile, sourceFile, newFile) {
@@ -715,408 +851,6 @@ ModManager._getJSON = function(dir, dest) {
 
 
 //-----------------------------------------------------------------------------
-// ModManager - Script Functions
-//
-
-ModManager.readScriptSettings = function(callback) {
-    this._callback = callback;
-
-    //If using mods functionality, check for script config
-    //  or make it - callback is called downstream
-    if (fs.existsSync(this._path)) {
-        //If configuration already exists
-        var url = path.join(this._path,'scripts.js');
-        if (fs.existsSync(url)) {
-            //nothing
-        } else {
-            this._scripts = {};
-            this._parameters = {};
-            this.logScriptSettings();
-        }
-        this.loadScriptSettings(url);
-    } else {
-        //run normally
-        callback();
-    }
-}
-
-ModManager.checkScriptChanges = function() {
-    var fs = require('fs');
-    var path = require('path');
-    //Register or update parameter data for all listed files
-    var _this = this;
-    function scriptRegRecurse(pathname, start) {
-        var scripts = fs.readdirSync(pathname);
-        for (var i in scripts) {
-            var item = scripts[i];
-            if (fs.lstatSync(path.join(pathname, item)).isDirectory()) {
-                scriptRegRecurse(path.join(pathname, item), start);
-            } else {
-                var ext = item.split('.').pop();
-                if (ext == "js") {
-                    var file = path.join(pathname, item);
-                    file = file.replace(start, '').slice(1); //get rid of path separator character
-                    if (Object.keys(_this._scripts).indexOf(file) < 0) _this._scripts[file] = false;
-                    _this.getParams(path.join(pathname, item), file);
-                }
-            }
-        }
-    }
-    if (fs.existsSync(path.join(this._path, 'scripts'))) {
-        scriptRegRecurse(path.join(this._path, 'scripts'), path.join(this._path, 'scripts'));
-        this.logScriptSettings();
-    }
-
-    this._callback.call();
-};
-
-//Only called when scripts.js is finished loading
-ModManager.setData = function(params, scripts) {
-    this._parameters = params;
-    this._scripts = scripts;
-    this.checkScriptChanges();
-};
-
-ModManager.loadScriptSettings = function(url) {
-    var script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = url;
-    script.async = false;
-    script._url = url;
-    document.body.appendChild(script); 
-    return script;
-}
-
-ModManager.logScriptSettings = function() {
-    var fs = require('fs');
-    var data = "ModManager.setData("+JSON.stringify(this._parameters)+','+JSON.stringify(this._scripts)+")"
-    //var data = "ModManager._parameters = "+JSON.stringify(this._parameters)+";\n";
-    //data += "ModManager._scripts = "+JSON.stringify(this._scripts)+";";
-    fs.writeFileSync(path.join(this._path,'scripts.js'), data, {encoding: 'utf8'});
-};
-
-//Loads and updates parameter data from a script file
-ModManager.getParams = function(file, name) {
-    name = name || file;
-    var url = (/\.js/.exec(file)) ? file : file+'.js';
-    var paramData = this.parameterParse(url);
-    for (key in paramData) {
-        if (!paramData[key].type) {
-            if (paramData[key].default !== undefined)
-                paramData[key]['type'] = this.guessTypeFromValue(paramData[key].default);
-            else //if no info given, assume it is a string
-                paramData[key]['type'] = 'undefined';
-            if (paramData[key].type === 'undefined' && paramData[key].on && paramData[key].off)
-                    paramData[key]['type'] = 'boolean';
-            if (paramData[key].type === 'undefined' && paramData[key].values)
-                    paramData[key]['type'] = this.guessTypeFromValue(paramData[key].values[0]);
-            if (paramData[key].type === 'undefined')
-                  paramData[key]['type'] = 'string';
-        }
-        if (paramData[key].default === undefined)
-            if (paramData[key].type)
-                paramData[key]['default'] = this.guessDefaultFromType(paramData[key].type);
-        if (paramData[key].default === null && paramData[key].values)
-            paramData[key].default = paramData[key].values[0];
-
-        paramData[key]['_realValue'] = paramData[key].default;
-    }
-    //if file params not loaded or file properties (parameter listings) changed, load new
-    if (!this._parameters[name] || this.detectChange(this._parameters[name], paramData, true)) {
-        this._parameters[name] = paramData;
-    }
-    //this.logScriptSettings();
-}
-
-//Returns true if the old parameter data is missing a parameter present in curr,
-//OR if for ANY parameter, the type or default has changed.
-//If carryOverValues is true, then if a value is set in old, it will apply to curr,
-//if possible/compatible. Otherwise, it will not modify old or curr.
-ModManager.detectChange = function(old, curr, carryOverValues) {
-    var changed = false;
-    for (param in curr) {
-        //if the parameter is not in the old parameter settings
-        if (old[param] == null && curr[param] != null) {
-            changed = true;
-        //if the type of the parameter has changed
-        } else if (old[param].type && (old[param].type != curr[param].type)) {
-            changed = true;
-        //if the default value, and likely value scale/range, has changed
-        } else if (old[param].default && (old[param].default != curr[param].default)) {
-            changed = true;
-        //if min existed and was raised, check that we are still in bounds
-        } else if (old[param].min && (old[param].min < curr[param].min)) {
-            if (carryOverValues) {
-                curr[param]._realValue = Math.max(old[param]._realValue, curr[param].min);
-            }
-            changed = true;
-        //if max existed and was lowered, check that we are still in bounds
-        } else if (old[param].max && (old[param].max > curr[param].max)) {
-            if (carryOverValues) {
-                curr[param]._realValue = Math.min(old[param]._realValue, curr[param].max);
-            }
-            changed = true;
-        //if list of values was given but has changed, check that value is still a valid one, else find such a value
-        } else if (old[param].values && (JSON.stringify(old[param].values) != JSON.stringify(curr[param].values))) {
-            if (carryOverValues) {
-                if (old.type == 'number' && curr.type == 'number') {
-                    curr[param]._realValue = (curr[param].values.indexOf(old[param]._realValue) >= 0) ? old[param]._realValue : ((curr[param].default != undefined)?curr[param].defualt:curr[param].values[0]);
-                } else {
-                    curr[param]._realValue = (curr[param].values.indexOf(parseFloat(old[param]._realValue)) >= 0) ? old[param]._realValue : ((curr[param].default != undefined)?curr[param].defualt:curr[param].values[0]);
-                }
-            }
-            changed = true;
-        //OTHERWISE (parameter unchanged), if a value is set, carry over as desired
-        } else if (old[param]._realValue) {
-            if (carryOverValues) {
-                curr[param]._realValue = old[param]._realValue;
-            }
-        }
-    }
-    return changed;
-}
-
-//Reads parameter data out of commented segments of js files
-    //IMPORTANT: it expects annotations such as @param, @type, @on, @off, @default, @parent
-    //and it expects the values of these annotations to be the only other thing to the right
-    //of the annotation on the corresponding line.
-ModManager.parameterParse = function(file) {
-    //var os = require('os');
-    var fs = require('fs');
-    var lines = (fs.readFileSync(file, 'utf8')).split(/[\r\n]+/);//os.EOL);
-
-    var in_comment_block = false;
-    var parameters = {};
-    var last_param = null;
-
-    var i = 0;
-    while (i < lines.length) {
-        var line = lines[i];
-        var comment = "";
-        var match = null;
-        if (!in_comment_block) {
-            //see if the line is commented out, or the start of a comment block
-            match = /\/(\/|\*)(.*)/.exec(line);
-            if (match) {
-                // line-comment came first
-                if (match[1] == '/') {
-                    comment = match[2];
-                    i+=1; //process this line and move on
-
-                // block-comment start came first
-                } else if (match[1] == '*') {
-                    line[i] = match[2];
-                    in_comment_block = true;
-                    //don't increment i or process rest of line yet, see if more happens on this line
-                } else  {
-                //should never happen, but if it somehow does
-                    console.log(match)
-                    i+=1;
-                }
-
-            //not in any comment
-            } else {
-                i+=1; //do nothing, move on
-            }
-        } else {
-            //see if the line is commented out, or the start of a comment block
-            match = /(.*)\*\/(.*)/.exec(line);//match = /(.*)(\/|\*)\/(.*)/.exec(line);
-            if (match) {
-                // if block-comment ends
-                line[i] = match[2]; //process rest of line
-                comment = match[1]; //process comment body
-                in_comment_block = false;
-                //don't increment i or process rest of line yet, see if more happens on this line
-            //stays in comment body, process line as comment
-            } else {
-                comment = line;
-                i+=1;
-            }
-        }
-
-        //Parse commented segment for parameter tags
-        if (comment == "") continue;
-        match = /@(param|type|on|off|desc|default|value|min|max|parent) (.+)(\s*)$/i.exec(comment);
-        if (match) {
-            switch(match[1].toLowerCase()) {
-                case "param":
-                    last_param = match[2];
-                    if (parameters[match[2]] == null)
-                        parameters[match[2]] = {};
-                    break;
-                case "value":
-                    if (!parameters[last_param]["values"]) {
-                        parameters[last_param]["values"] = [];
-                    }
-                    parameters[last_param]["values"].push(match[2]);
-                    break;
-                case "type":
-                case "on":
-                case "off":
-                case "desc":
-                case "min":
-                case "max":
-                case "default":
-                case "parent":
-                    parameters[last_param][match[1]] = match[2];
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-    return parameters;
-}
-ModManager.guessTypeFromValue = function(value) {
-    if (value == undefined || value == null)
-        return 'undefined';
-    if (value == 'true' || value == 'false')
-        return 'boolean';
-    if (isNaN(value))
-        return 'string';
-    return 'number';
-}
-ModManager.guessDefaultFromType = function(type) {
-    switch(type) {
-        case 'boolean': return false;
-        case 'string': return "";
-        case 'number': return 0;
-        case 'undefined': return null;
-        default: return null;
-    }
-}
-//When we exit to title, remove scripts in case we alter
-//the configuration and have to load them anew
-ModManager.clearScripts = function() {
-    if (this._gameLoaded) {
-        for (let script in this._scripts) {
-            if (!this._scripts[script]) continue;
-            let source = path.join(this._path,'scripts',script);
-            for (let j in document.body.childNodes) {
-                let node = document.body.childNodes[j];
-                if (node._url == source) {
-                    document.body.removeChild(node);
-                    break;
-                }
-            }
-        }
-        this._gameLoaded = false;
-    }
-}
-ModManager.addScripts = function() {
-    if (!this._gameLoaded) {
-        let path = require('path');
-        for (let file in this._scripts) {
-            //if the script is active/enabled
-            if (this._scripts[file]) {
-                //convert all values to strings
-                let params = {};
-                for (let p in this._parameters[file]) {
-                    params[p] = String(this._parameters[file][p]._realValue);
-                }
-                //inform PluginManager
-                const name = ((file.split(/[\\|\/]/).pop()).split('.'))[0];
-                PluginManager.setParameters(name, params);
-                //add script code to the game
-                const url = path.join(this._path,'scripts',file);
-                let script = document.createElement('script');
-                script.type = 'text/javascript';
-                script.src = url;
-                script.async = false;
-                //script.onerror = this.onError.bind(this);
-                script._url = url;
-                document.body.appendChild(script);
-            }
-        }
-        this._gameLoaded = true;
-    }
-}
-
-//source is folder containing data JSON folders
-ModManager.loadDatabase = function(source, callback) {
-    if (!this._databases[source]) {
-        source = source.toLowerCase();
-        this._databases[source] = {};
-        var fs = require('fs');
-        var files = fs.readdirSync(source);
-    
-        this._awaiting[source] = files.length;
-        for (var i in files) {
-            var file = files[i].split('.');
-            if (file[1] == 'json') {
-                this.loadDataFile(source, file[0]);
-            }
-        }
-    }
-    this._callbacks[source] = callback.bind(this);
-};
-
-ModManager.loadDataFile = function(source, name) {
-    var path = require('path');
-    var fs = require('fs');
-    //if file is outdated, delete it
-    if (!fs.existsSync(source)) {
-        if (this._parameters[source]) {
-            delete this._parameters.source;
-            this.logScriptSettings();
-        }
-        return;
-    }
-    var xhr = new XMLHttpRequest();
-    name = name.toLowerCase();
-    var url = path.join(source, name);//'data/' + src;
-    xhr.open('GET', url);
-    xhr.overrideMimeType('application/json');
-    xhr.onload = function() {
-        if (xhr.status < 400) {
-            this._databases[source][name] = JSON.parse(xhr.responseText);
-            ModManager._onLoad(source);
-        }
-    };
-    xhr.send();
-};
-
-//TODO : uses "new" ._version, which is location agnostic
-ModManager.loadPlugins = function() {
-    /* Don't load plugins multiple times */
-    if (this._patchPlugins.indexOf(DataManager._version) > 0) return;
-    const pluginPath = path.join(this._path, this._installsFolder, DataManager._version, "plugins.js");
-    if (fs.existsSync(pluginPath)) {
-        let file = fs.readFileSync(pluginPath,{encoding: 'utf8'});
-        let anchor = "var $plugins =";
-        let pluginVarFind = RegExp(anchor);
-        let plugs;
-        file.replace(pluginVarFind, function(match, offset, string) {
-            let i = offset;
-            while (string[i] != '{') {
-                i += 1;
-            }
-            let j = i;
-            let bracketCount = 1;
-            while (bracketCount > 0) {
-                if (string[j] == '{') {
-                    bracketCount += 1;
-                } else if (string[j] == '}') {
-                    bracketCount -= 1;
-                }
-                j += 1;
-            }
-            plugs = JSON.parse(string.slice(i, j));
-            return "";
-        })
-        //TODO: check that this works if the pluginlist contains files from the original that aren't modified AKA aren't in the patch's js folder
-        PluginManager.setup(plugs);
-    }
-}
-
-ModManager._onLoad = function(database) {
-    this._awaiting[database]--;
-    if (this._awaiting[database] == 0) {
-        this._callbacks[database].call(this);
-    }
-}
-
-//-----------------------------------------------------------------------------
 // Scene_Title
 //
 // The scene class of the title screen.
@@ -1133,7 +867,6 @@ Scene_Title.prototype.initialize = function() {
 var _alias_modmanage_sct_create_com_window = Scene_Title.prototype.createCommandWindow;
 Scene_Title.prototype.createCommandWindow = function() {
     _alias_modmanage_sct_create_com_window.call(this);
-    var fs = require('fs');
     if (fs.existsSync(ModManager._path)) {
         this._commandWindow.setHandler('mod',  this.commandModManage.bind(this));
         ModManager.clearPatch();
@@ -1142,16 +875,12 @@ Scene_Title.prototype.createCommandWindow = function() {
 
 var _alias_modmanage_startNewGame = Scene_Title.prototype.commandNewGame;
 Scene_Title.prototype.commandNewGame = function(install) {
-    var fs = require('fs');
-    var path = require('path');
-
     if (fs.existsSync(ModManager._path) &&
         fs.existsSync(path.join(ModManager._path, ModManager._installsFolder)) &&
         ((fs.readdirSync(path.join(ModManager._path, ModManager._installsFolder))).length) > 0) {
         this._commandWindow.close();
         SceneManager.push(Scene_StartGame);
     } else {
-        ModManager.addScripts();
         _alias_modmanage_startNewGame.call(this);
     }
 };
@@ -1198,7 +927,7 @@ ModManager.applyFunctionSafeties = function(file, patchname) {
     function wrapScriptBody(topline, bodyText, hasElse, funName, args) {
         const aliasName = "MVM_script_alias_"+funName.replace(/\./g, '_');
         let preface = "";
-        let if_add = "if (DataManager._version == "+JSON.stringify(patchname)+") {";
+        let if_add = "if (DataManager._version == <replaceText>) {";
         let if_close = "}";
         if (hasElse) {
             preface = "let "+aliasName+" = "+funName+";";
@@ -1240,7 +969,6 @@ ModManager.applyFunctionSafeties = function(file, patchname) {
      *   cannot be problematic. */
     file = file.replace(/\/\*(.?\s?)*?\*\//g, '');
     file = file.replace(/\/\/(.*)/g, '');
-
 
     /* eg: function DataManager() { ... } */
     const define = /(?:\s)*function(?:\s)*(?<funName>[a-zA-Z0-9_\$].*?)(?:\s)*\(/g;
@@ -1321,13 +1049,13 @@ ModManager.applyFunctionSafeties = function(file, patchname) {
         }
 
         /* Otherwise no replacement */
-        return string;
+        return match;
     });
     //deleteMidsection();
 
     /* eg: function DataManager.loadDatafile = function(file) { ... } */
     /* eg: function DataManager.loadDatafile = (file) => { ... } */
-    const assignment = /(?:\s)*(?:let|const|var)?(?:\s)*(?<varName>[a-zA-Z0-9_\$].*?)(?:\s)*=(?:\s)*(?:function(?:\s)*\((?<argsCase1>.*?(?:,(?:\s)*?(?:.*?))*?)\)(?:\s)*\{|\(?(?<argsCase2>.*?(?:,(?:\s)*?(?:.*?))*?)\)?(?:\s)*=>(?:\s)*\{)/g;
+    const assignment = /(?:\s)*(?:let|const|var)?(?:\s)*(?<varName>[a-zA-Z0-9_\$].*?)(?::)?(?:\s)*=(?:\s)*(?:function(?:\s)*\((?<argsCase1>.*?(?:,(?:\s)*?(?:.*?))*?)\)(?:\s)*\{|\(?(?<argsCase2>.*?(?:,(?:\s)*?(?:.*?))*?)\)?(?:\s)*=>(?:\s)*\{)/g;
     file.replace(assignment, function(match, varName, argsCase1, argsCase2, offset, string) {
         let args = argsCase1 || argsCase2 || "";
         let i;
@@ -1386,78 +1114,316 @@ ModManager.applyFunctionSafeties = function(file, patchname) {
         }
 
         /* Otherwise no replacement */
-        return string;
+        return match;
     });
-    deleteMidsection();
+    //deleteMidsection();
 
-    function getNameAndArgs(funString) {
-        let match = funString.match(define);
-        if (match) {
-            let offset = match.index;
-            /* build args list */
-            args = "";
-            let parenOpenCount = 1;
-            /* index after the parenthesis that opens the argument list */
-            let j = offset+match[0].length;
-            while (parenOpenCount > 0) {
-                args += string[j];
-                if (funString[j] == ')') {
-                    parenOpenCount -= 1;
-                } else if (funString[j] == '(') {
-                    parenOpenCount += 1;
-                } j += 1;
-            }
-            return [match[1],args.split('.')];
-        }
+    /* eg: Object.defineProperty(Bitmap.prototype, 'paintOpacity', {
+     *          get: function() {
+     */
+    const objproperty = /(?:Object\.defineProperty(?:\s)*\()(?:\s)*(?<objName>[a-zA-Z0-9_\$].*?)(?:\s)*,(?:\s)*(?:'(?<property1>[a-zA-Z0-9_\$].*?)'|"(?<property2>[a-zA-Z0-9_\$].*?)")(?:\s)*,(?:\s)*\{/g;
+    file.replace(objproperty, function(match, objName, property1, property2, offset, string) {
+        let property = property1 || property2 || "";
 
-        match = funString.match(assignment);
-        if (match) {
-            args = match[2] || match[3];
-            return [match[1],args.split('.')];
-        }
-        return null;
-    }
-
-if (false) {
-    /* eg: DataManager.loadDatafile = _alias_load_database_when_ready; */
-    regex = /(?:\s)*(?<varName>[a-zA-Z0-9_\$].*?)(?:\s)*=(?:\s)*(?<funVal>[a-zA-Z0-9_\$].*?)(?:\s)*[\n\r;])/;
-    file = file.replace(regex, function(match, varName, funVal, offset, string) {
-        /* NOTE - this doesn't check what the function is being set to, because it cannot, because if it
-         * is a function, we wouldn't be able to easily tell, as it could be a function defined in some
-         * modded js file that we have not loaded yet. It does, however, feel like a safe assumption to
-         * assume that any existing function, if set to another value, will be set to a function, and not
-         * a primitive. There should be no reason to redefine a function symbol to a primitive. */
-
-        /* See if the function being set is already defined */
-        let objPath = varName.split('.');
+        /* See if the function is already defined */
+        let objPath = objName.split('.');
         let nav = window;
         for (let i = 0; (i < objPath.length) && (nav != null); i++) {
             nav = nav[objPath[i]];
         }
 
-        let origArgCount = 0;
-        if (nav && typeof nav == 'function') {
-            /* There is no function body to use as a base for sanitzation here, we
-             * have to make it ourselves. */
+        /* i = index of the curly bracket that opens the function body */
+        i = offset+match.length;
 
-            let result = getNameAndArgs(String(nav));
-            if (result) {
-                const aliasName = "MVM_script_alias_"+funName;
-                let replaceString = "let "+aliasName+" = "+varName+";\n "; 
-                replaceString += varName + " = function(...args) {\n";
-                replaceString += "if (DataManager._version = "+JSON.stringify(patchname)+") {\n";
-                replaceString += funVal+".call(this, ...args);\n";
-                replaceString += "} else {\n";
-                replaceString += aliasName+".call(this, ...args);\n";
-                replaceString += "}\n";
-                return replaceString;
+        let bodyText = "";
+        let parenOpenCount = 1;
+        while (parenOpenCount > 0) {
+            bodyText += string[i];
+            if (string[i] == '}') {
+                parenOpenCount -= 1;
+            } else if (string[i] == '{') {
+                parenOpenCount += 1;
             }
+            i += 1;
         }
 
-        /* Otherwise no replacement */
-        return string;
+        /* Other attributes/Symbols that can be defined with defineProperty:
+         * - value: value associated with the property (Number, Object, Functin, etc)
+         * - writable: if the value associated with the property may be changed with an assignment operator (default: false)
+         * - enumerable" whether this property appears during enumeration over the object's properties (default: false)
+         * - configurable: whether this property descriptor may be changed/deleted from the object (defaults; false)
+         * As you can see, none of them are functions - which makes them hard to meaningfully "alias". Thankfully,
+         * the changes that this will cause a problem are very slim.
+         */
+        let preface = "";
+        let hasGetter = !!(nav.__lookupGetter__(property));
+        let hasSetter = !!(nav.__lookupSetter__(property));
+
+        const getAlias = "MVM_property_getter_alias_"+objName.replace(/\./g, '_')+"_"+property;
+        const setAlias = "MVM_property_setter_alias_"+objName.replace(/\./g, '_')+"_"+property;
+        let toReplace = "";
+        let replaceText = "";
+
+        bodyText.replace(/(?:\s)*(?:get|'get'|"get")(?:\s)*:(?:\s)*function\(\)(?:\s)*\{/, function(m, o, g) {
+            /* m for match, o for offset, g for "whole getter string" */
+
+            if (hasGetter) {
+                preface += "let "+getAlias+" = "+objName+".__lookupGetter__('"+property+"');\n";
+            }
+
+            let j = o+m.length;
+            let bt = "";
+            parenOpenCount = 1;
+            while (parenOpenCount > 0) {
+                bt += g[j];
+                if (g[j] == '}') {
+                    parenOpenCount -= 1;
+                } else if (g[j] == '{') {
+                    parenOpenCount += 1;
+                }
+                j += 1;
+            }
+            /* Note body text includes its surrounding { } brackets */
+            
+            replaceText = "get: function() {\n";
+            replaceText += "if (DataManager._version == <replaceText>) {";
+            replaceText += bt +"\n"; //includes its own curly braces
+            if (hasGetter) {
+                replaceText += " else { return "+getAlias+".call(this) }\n";
+            }
+            replaceText += "}\n"; //close function
+
+            toReplace = m+bt;
+            return m;
+        })
+        bodyText = bodyText.replace(toReplace, replaceText);
+  
+        bodyText.replace(/(?:\s)*(?:set|'set'|"set")(?:\s)*:(?:\s)+function\((?<argument>(?:[a-zA-Z0-9_\$].*?))\)(?:\s)*\{/, function(m, argument, o, s) {
+            /* m for match, o for offset, s for "whole setter string" */
+
+            if (hasSetter) {
+                preface += "let "+setAlias+" = "+objName+".__lookupSetter__('"+property+"');\n";
+            }
+
+            let j = o+m.length;
+            let bt = "";
+            parenOpenCount = 1;
+            while (parenOpenCount > 0) {
+                bt += s[j];
+                if (s[j] == '}') {
+                    parenOpenCount -= 1;
+                } else if (s[j] == '{') {
+                    parenOpenCount += 1;
+                }
+                j += 1;
+            }
+            /* Note body text includes its surrounding { } brackets */
+
+            replaceText = "set: function(" + argument + ") {\n";
+            replaceText += "if (DataManager._version == <replaceText>) {"
+            replaceText += bt +"\n"; //includes its own curly braces
+            if (hasSetter) {
+                replaceText += " else { return "+setAlias+".call(this, " + argument + ") }\n"
+            }
+            replaceText += "}\n"; //close function
+
+            toReplace = m+bt;
+            return m;
+        })
+        bodyText = bodyText.replace(toReplace, replaceText);
+
+        let final = "";
+        final = final + preface + "\n" + match;
+        final = final + bodyText;
+        final = final + ")\n;";
+
+        i = offset+("Object.defineProperty(".length);
+        parenOpenCount = 1;
+        while (parenOpenCount > 0) {
+            if (string[i] == ')') {
+                parenOpenCount -= 1;
+            } else if (string[i] == '(') {
+                parenOpenCount += 1;
+            }
+            i += 1;
+        }
+
+        toDelete.push([offset, i+1, final]);
+        return match;
     });
-}
+    //deleteMidsection();
+
+    /* eg: Object.defineProperties(Bitmap.prototype, {
+     *        prop1: {S
+     *          get: function() {
+     */
+    const objproperties = /(?:Object\.defineProperties(?:\s)*\()(?:\s)*(?<objName>[a-zA-Z0-9_\$].*?)(?:\s)*,(?:\s)*\{/g;
+    file.replace(objproperties, function(match, objName, offset, string) {
+        /* See if the function is already defined */
+        let objPath = objName.split('.');
+        let nav = window;
+        for (let i = 0; (i < objPath.length) && (nav != null); i++) {
+            nav = nav[objPath[i]];
+        }
+
+        /* i = index of the curly bracket that opens the function body */
+        i = offset+match.length;
+
+        let bodyText = "";
+        let parenOpenCount = 1;
+        while (parenOpenCount > 0) {
+            bodyText += string[i];
+            if (string[i] == '}') {
+                parenOpenCount -= 1;
+            } else if (string[i] == '{') {
+                parenOpenCount += 1;
+            }
+            i += 1;
+        }
+
+        let finalObjText = [];
+        let preface = ""
+
+        /* We use this convoluted loop process because the possibility that
+         * regex matches something in a function body is too nontrivial. We only
+         * want to match with top-level properties; thus, 
+         */
+        let matched = true;
+        while (matched) {
+            matched = false;
+            let _toAxe = "";
+            bodyText.replace(/(?:(?<property1>[a-zA-Z0-9_\$].*?)|'(?<property2>[a-zA-Z0-9_\$].*?)'|"(?<property3>[a-zA-Z0-9_\$].*?)")(?:\s)*:(?:\s)+\{/,
+                function(_match, property1, property2, property3, _offset, _string) {
+                    matched = true;
+
+                    let property = property1 || property2 || property3 || "";
+
+                    let hasGetter = !!(nav.__lookupGetter__(property));
+                    let hasSetter = !!(nav.__lookupSetter__(property));
+
+                    const getAlias = "MVM_property_getter_alias_"+objName.replace(/\./g, '_')+"_"+property;
+                    const setAlias = "MVM_property_setter_alias_"+objName.replace(/\./g, '_')+"_"+property;
+                    let toReplace = "";
+                    let replaceText = "";
+
+                    let _bodyText = "";
+                    let k = _offset+_match.length;
+                    parenOpenCount = 1;
+                    while (parenOpenCount > 0) {
+                        _bodyText += _string[k];
+                        if (_string[k] == '}') {
+                            parenOpenCount -= 1;
+                        } else if (_string[k] == '{') {
+                            parenOpenCount += 1;
+                        }
+                        k += 1;
+                    }
+
+                    _toAxe = _match+_bodyText;
+
+                    /* _bodyText is the body text of the particular property's body that we matched with */
+                    _bodyText.replace(/(?:\s)*(?:get|'get'|"get")(?:\s)*:(?:\s)*function\(\)(?:\s)*\{/, function(m, o, g) {
+                        /* m for match, o for offset, g for "whole getter string" */
+
+                        if (hasGetter) {
+                            preface += "let "+getAlias+" = "+objName+".__lookupGetter__('"+property+"');\n";
+                        }
+
+                        let j = o+m.length;
+                        let bt = "";
+                        parenOpenCount = 1;
+                        while (parenOpenCount > 0) {
+                            bt += g[j];
+                            if (g[j] == '}') {
+                                parenOpenCount -= 1;
+                            } else if (g[j] == '{') {
+                                parenOpenCount += 1;
+                            }
+                            j += 1;
+                        }
+                        
+                        replaceText = "get: function() {\n";
+                        replaceText += "if (DataManager._version == <replaceText>) {";
+                        replaceText += bt +"\n"; //includes its own curly braces
+                        if (hasGetter) {
+                            replaceText += " else { return "+getAlias+".call(this) }\n";
+                        }
+                        replaceText += "}\n"; //close function
+
+                        toReplace = m+bt;
+                        return m;
+                    })
+                    _bodyText = _bodyText.replace(toReplace, replaceText);
+
+                    _bodyText.replace(/(?:\s)*(?:set|'set'|"set")(?:\s)*:(?:\s)+function\((?<argument>(?:[a-zA-Z0-9_\$].*?))\)(?:\s)*\{/, function(m, argument, o, s) {
+                        /* m for match, o for offset, s for "whole setter string" */
+
+                        if (hasSetter) {
+                            preface += "let "+setAlias+" = "+objName+".__lookupSetter__('"+property+"');\n";
+                        }
+
+                        let j = o+m.length;
+                        let bt = "";
+                        parenOpenCount = 1;
+                        while (parenOpenCount > 0) {
+                            bt += s[j];
+                            if (s[j] == '}') {
+                                parenOpenCount -= 1;
+                            } else if (s[j] == '{') {
+                                parenOpenCount += 1;
+                            }
+                            j += 1;
+                        }
+
+                        replaceText = "set: function(" + argument + ") {\n";
+                        replaceText += "if (DataManager._version == <replaceText>) {"
+                        replaceText += bt +"\n"; //includes its own curly braces
+                        if (hasSetter) {
+                            replaceText += " else { return "+setAlias+".call(this, " + argument + ") }\n"
+                        }
+                        replaceText += "}\n"; //close function
+
+                        toReplace = m+bt;
+                        return m;
+                    })
+                    _bodyText = _bodyText.replace(toReplace, replaceText);
+
+                    _finalObjText = "";
+                    _finalObjText = _finalObjText + _match;
+                    _finalObjText = _finalObjText + _bodyText;
+                    _finalObjText = _finalObjText + "\n";
+                    finalObjText.push(_finalObjText);
+
+                    return _match;
+                })
+                /* Trim the key-value pair we just parsed/identified so it can't match against
+                 * something inside the body text */
+                bodyText = bodyText.replace(_toAxe, "");
+
+        } /* end while (true) */
+        
+        let final = "";
+        final = final + preface + "\n" + match;
+        final = final + finalObjText.join(',');
+        final = final + "})\n";
+
+        i = offset+("Object.defineProperties(".length);
+        parenOpenCount = 1;
+        while (parenOpenCount > 0) {
+            if (string[i] == ')') {
+                parenOpenCount -= 1;
+            } else if (string[i] == '(') {
+                parenOpenCount += 1;
+            }
+            i += 1;
+        }
+
+        toDelete.push([offset, i+1, final]);
+
+        return match;
+    });
+    deleteMidsection();
+
     return file;
 }
 
@@ -1467,18 +1433,12 @@ Scene_Load.prototype.onSavefileOk = function() {
     let prev_version = DataManager._version;
     const success = DataManager.loadGame(this.savefileId());
     if (success) {
+        ModManager.changeSourceCode(prev_version, DataManager._version);
         if ((DataManager._version && DataManager._version != "") || (prev_version != DataManager._version)) {
             let loadPatchDatabases = function() {
-                //Save original encryption key;
-                //  Only do the first time - otherwise a "load" from a modded save would mess it up
-                if (!Decrypter._baseEncryptionKey) {
-                    if ($dataSystem.encryptionKey) {
-                        Decrypter._baseEncryptionKey = $dataSystem.encryptionKey.split(/(.{2})/).filter(Boolean);
-                    }
-                }
+                
                 //Vanilla/base data files loaded at boot, once we start a game, reload them based on
                 //  the patch
-                ModManager.addScripts(); //TODO - should this be here?
                 this._loaded = true;
                 this.onLoadSuccess();
             }
@@ -1486,8 +1446,14 @@ Scene_Load.prototype.onSavefileOk = function() {
             this._loaded = false;
             ModManager.queuedFunction = loadPatchDatabases.bind(this);
 
-            ModManager.loadPlugins();
-            //ImageManager.clear(); //TODO: This will fuck up the window 
+            ModManager.loadPlugins(prev_version);
+            //Save original encryption key;
+            //  Only do the first time - otherwise a "load" from a modded save would mess it up
+            if (!Decrypter._baseEncryptionKey) {
+                if ($dataSystem.encryptionKey) {
+                    Decrypter._baseEncryptionKey = $dataSystem.encryptionKey.split(/(.{2})/).filter(Boolean);
+                }
+            }
             DataManager.loadDatabase();
         } else {
             this.onLoadSuccess();
@@ -1497,8 +1463,32 @@ Scene_Load.prototype.onSavefileOk = function() {
     }
 };
 
-DataManager.loadEncryptionList = function() {
-    this._encryptionList = ModManager.loadEncryptionList(this._version);
+DataManager.loadEncryptionList = function(ver=null) {
+    if (!ver) { ver = this._version; }
+    if (!this._encryptionList) {
+        this._encryptionList = {};
+    }
+    if (Object.keys(this._encryptionList).indexOf(ver) < 0) {
+        this._encryptionList[ver] = ModManager.loadEncryptionList(ver);
+    }
+}
+
+DataManager.checkEncryptList = function(url) {
+    if (!this._encryptionList || !this._encryptionList[this._version]) { return null; }
+    if (this._encryptionList[this._version][url]) {
+        //url = url.replace('\\', '/');
+        url = url.replace('.rpgmvo', '.ogg');
+        url = url.replace('.rpgmvm', '.m4a');
+        url = url.replace('.rpgmvp', '.png');
+        return this._encryptionList[this._version][url];
+    }
+    /*
+    reverseSlashes = url;
+    reverseSlashes = reverseSlashes.replace(/\//, '\\');
+    if (this._encryptionList[reverseSlashes]) {
+        return this._encryptionList[reverseSlashes];
+    }*/
+    return null;
 }
 
 //Global save info defs knows which save is on which mod/patch
@@ -1512,6 +1502,12 @@ DataManager.saveGameWithoutRescue = function(savefileId) {
     return val;
 }
 
+const mv_mm_reset_load_latches = DataManager.loadDatabase;
+DataManager.loadDatabase = function(...args) {
+    MVMM_resetLatches();
+    mv_mm_reset_load_latches.call(this, ...args);
+}
+
 //-----------------------------------------------------------------------------
 
 const DMcheckImageIgnoreIfNoEncrypt = Decrypter.checkImgIgnore;
@@ -1521,12 +1517,10 @@ Decrypter.checkImgIgnore = function(url){
     }
     //If this is in the encryption list with a key of "null",
     //  it is unencrypted, "ignore" the encryption
-    if (DataManager._encryptionList) {
-        if (url in DataManager._encryptionList) {
-            if (!DataManager._encryptionList[url]) {
-                return true;
-            }
-        }
+    //ie: the main game has Encrypted Assets set to true, but
+    //  some patched in assets are unencrypted
+    if (Decrypter.getEncryptionKey(url) == null) {
+        return true;
     }
     return DMcheckImageIgnoreIfNoEncrypt.call(this, url);
 }
@@ -1535,12 +1529,28 @@ Decrypter.readBaseEncryptionkey = function(){
     return this._baseEncryptionKey || $dataSystem.encryptionKey.split(/(.{2})/).filter(Boolean);
 };
 
-Decrypter.getEncryptionKey = function(url) {
-    DataManager.loadEncryptionList();
-    if (DataManager._version && DataManager._version != "") {
-        if (url in DataManager._encryptionList) {
-            return DataManager._encryptionList[url];
+Decrypter.getEncryptionKey = function(url, ver = DataManager._version) {
+    DataManager.loadEncryptionList(ver);
+    if (ver && ver != "") {
+        let retKey = this.readBaseEncryptionkey();
+        let keys = Object.keys(DataManager._encryptionList[ver]);
+        if (keys.indexOf(url) >= 0) {
+            retKey = DataManager._encryptionList[ver][url];
         }
+        reverseSlashes = url;
+        reverseSlashes = reverseSlashes.replace(path.join(ModManager._path, ModManager._installsFolder, ver), '');
+        reverseSlashes = reverseSlashes.replace(/^(\/|\\)/, '');
+        if (keys.indexOf(reverseSlashes) >= 0) {
+            retKey = DataManager._encryptionList[ver][reverseSlashes];
+        }
+        reverseSlashes = reverseSlashes.replace(/\\/g, '/');
+        reverseSlashes = reverseSlashes.replace('.rpgmvo', '.ogg');
+        reverseSlashes = reverseSlashes.replace('.rpgmvm', '.m4a');
+        reverseSlashes = reverseSlashes.replace('.rpgmvp', '.png');
+        if (keys.indexOf(reverseSlashes) >= 0) {
+            retKey = DataManager._encryptionList[ver][reverseSlashes];
+        }
+        return retKey;
     }
     return this.readBaseEncryptionkey();
 }
@@ -1557,7 +1567,8 @@ XMLHttpRequest.prototype.open = function(method, url) {
         //  appropriate encryption key for the asset path
 
         //really this probably shouldn't exist, should all be covered by the latter (else if) case
-        if (url in DataManager._encryptionList) {
+        //if (Object.keys(DataManager._encryptionList).indexOf(url) >= 0) {
+        if (DataManager.checkEncryptList(url)) {
             url = path.join(ModManager._path, ModManager._installsFolder, DataManager._version, url);
         } else if (fs.existsSync(path.join(ModManager._path, ModManager._installsFolder, DataManager._version, url))) {
             url = path.join(ModManager._path, ModManager._installsFolder, DataManager._version, url);
@@ -1574,7 +1585,8 @@ ImageManager.loadNormalBitmap = function(url, hue) {
     if (DataManager._version && DataManager._version != "") {
         DataManager.loadEncryptionList();
         //really this probably shouldn't exist, should all be covered by the latter (else if) case
-        if (url in DataManager._encryptionList) {
+        if (DataManager.checkEncryptList(url)) {
+        //if (Object.keys(DataManager._encryptionList).indexOf(url) >= 0) {
             url = path.join(ModManager._path, ModManager._installsFolder, DataManager._version, url);
         } else if (fs.existsSync(path.join(ModManager._path, ModManager._installsFolder, DataManager._version, url))) {
             url = path.join(ModManager._path, ModManager._installsFolder, DataManager._version, url);
@@ -1588,7 +1600,8 @@ ImageManager.reserveNormalBitmap = function(url, hue, reservationId){
     if (DataManager._version && DataManager._version != "") {
         DataManager.loadEncryptionList();
         //really this probably shouldn't exist, should all be covered by the latter (else if) case
-        if (url in DataManager._encryptionList) {
+        if (DataManager.checkEncryptList(url)) {
+        //if (Object.keys(DataManager._encryptionList).indexOf(url) >= 0) {
             url = path.join(ModManager._path, ModManager._installsFolder, DataManager._version, url);
         } else if (fs.existsSync(path.join(ModManager._path, ModManager._installsFolder, DataManager._version, url))) {
             url = path.join(ModManager._path, ModManager._installsFolder, DataManager._version, url);
@@ -1603,12 +1616,68 @@ Decrypter.decryptHTML5Audio = function(url, bgm, pos) {
     requestFile.responseType = "arraybuffer";
     requestFile.send();
 
+    let ver = DataManager._version; //Change
     requestFile.onload = function () {
         if(this.status < Decrypter._xhrOk) {
             /* var arrayBuffer = Decrypter.decryptArrayBuffer(requestFile.response); */ //Change
-            let arrayBuffer = Decrypter.decryptArrayBuffer(requestFile.response, url);
+            let arrayBuffer = Decrypter.decryptArrayBuffer(requestFile.response, url, ver);
             let url = Decrypter.createBlobUrl(arrayBuffer);
             AudioManager.createDecryptBuffer(url, bgm, pos);
+        }
+    };
+};
+
+/* If any attempt is made at Android compatibility, "this.shouldUseHtml5Audio"
+ * may not always be false, in which case the following function behavior needs
+ * to be overriden to avoid Decrypting a bgm track in the case where the base
+ * game/project has encrypted audio and the patch adds a bgm track that is not
+ * encrypted.
+/*
+AudioManager.playBgm = function(bgm, pos) {
+    if (this.isCurrentBgm(bgm)) {
+        this.updateBgmParameters(bgm);
+    } else {
+        this.stopBgm();
+        if (bgm.name) {
+            //IF 
+            if(Decrypter.hasEncryptedAudio && this.shouldUseHtml5Audio()){
+                this.playEncryptedBgm(bgm, pos);
+            }
+            else {
+                this._bgmBuffer = this.createBuffer('bgm', bgm.name);
+                this.updateBgmParameters(bgm);
+                if (!this._meBuffer) {
+                    this._bgmBuffer.play(true, pos || 0);
+                }
+            }
+        }
+    }
+    this.updateCurrentBgm(bgm, pos);
+}; */
+
+Decrypter.decryptImg = function(url, bitmap) {
+    url = this.extToEncryptExt(url);
+
+    let requestFile = new XMLHttpRequest();
+    requestFile.open("GET", url);
+    requestFile.responseType = "arraybuffer";
+    requestFile.send();
+
+    let ver = DataManager._version; //Changed
+    requestFile.onload = function () {
+        if(this.status < Decrypter._xhrOk) {
+            let arrayBuffer = Decrypter.decryptArrayBuffer(requestFile.response, /*JUST THIS IS NEW */ url, ver);
+            bitmap._image.src = Decrypter.createBlobUrl(arrayBuffer);
+            bitmap._image.addEventListener('load', bitmap._loadListener = Bitmap.prototype._onLoad.bind(bitmap));
+            bitmap._image.addEventListener('error', bitmap._errorListener = bitmap._loader || Bitmap.prototype._onError.bind(bitmap));
+        }
+    };
+
+    requestFile.onerror = function () {
+        if (bitmap._loader) {
+            bitmap._loader();
+        } else {
+            bitmap._onError();
         }
     };
 };
@@ -1633,7 +1702,7 @@ WebAudio.prototype._load = function(url) {
 WebAudio.prototype._onXhrLoad = function(xhr, url=null) {
     let array = xhr.response;
     /* if(Decrypter.hasEncryptedAudio) array = Decrypter.decryptArrayBuffer(array); */ //Change
-    if(Decrypter.hasEncryptedAudio) array = Decrypter.decryptArrayBuffer(array, url);
+    if (Decrypter.hasEncryptedAudio) array = Decrypter.decryptArrayBuffer(array, url);
     this._readLoopComments(new Uint8Array(array));
     WebAudio._context.decodeAudioData(array, function(buffer) {
         this._buffer = buffer;
@@ -1650,7 +1719,7 @@ WebAudio.prototype._onXhrLoad = function(xhr, url=null) {
 };
 
 /* Decrypter.decryptArrayBuffer = function(arrayBuffer) { */
-Decrypter.decryptArrayBuffer = function(arrayBuffer, url=null) {
+Decrypter.decryptArrayBuffer = function(arrayBuffer, url=null, version="") {
     if (!arrayBuffer) return null;
     let header = new Uint8Array(arrayBuffer, 0, this._headerlength);
 
@@ -1661,18 +1730,19 @@ Decrypter.decryptArrayBuffer = function(arrayBuffer, url=null) {
         refBytes[i] = parseInt("0x" + ref.substr(i * 2, 2), 16);
     }
     for (i = 0; i < this._headerlength; i++) {
-        if (header[i] !== refBytes[i]) {
+        if ((header[i] !== refBytes[i]) && ModManager._checkAssetHeaders) {
             throw new Error("Header is wrong");
         }
     }
 
     arrayBuffer = this.cutArrayHeader(arrayBuffer, Decrypter._headerlength);
     let view = new DataView(arrayBuffer);
-    this._encryptionKey = this.getEncryptionKey(url);/* this.readEncryptionkey(); */ //Change
+
+    this._encryptionKey = this.getEncryptionKey(url, version);/* Changed: this.readEncryptionkey(); */
     if (arrayBuffer) {
         let byteArray = new Uint8Array(arrayBuffer);
         for (i = 0; i < this._headerlength; i++) {
-            byteArray[i] = byteArray[i] ^ parseInt(Decrypter._encryptionKey[i], 16);
+            byteArray[i] = byteArray[i] ^ parseInt(this._encryptionKey[i], 16);
             view.setUint8(i, byteArray[i]);
         }
     }
@@ -1680,53 +1750,26 @@ Decrypter.decryptArrayBuffer = function(arrayBuffer, url=null) {
     return arrayBuffer;
 };
 
-/* To explain the ImageManager.clear() - the ImageManager caches bitmaps
- *   based on url/filepath... this is the enemy of what we're doing, where
- *   in two different saves (on different patches), two assets with the same
- *   filepath may reroute to different modded assets in a process that gets
- *   "skipped" with ImageManager caching. So since we're trying to render
- *   possibly different patches of the same assets at once on the screen,
- *   we have to clear the cache every time.
- */
- /*
-Window_SavefileList.prototype.drawPartyCharacters = function(info, x, y) {
-    if (info.characters) {
-        for (var i = 0; i < info.characters.length; i++) {
-            var data = info.characters[i];
-            if (info.patch) { 
-                DataManager._backupVersion = DataManager._version;
-                DataManager._version = info.patch;
-            } //Will cause it to use save's patch's images, if applicable
-            this.drawCharacter(data[0], data[1], x + i * 48, y);
-            if (info.patch) { //Restore version, in case we're in-game
-                DataManager._version = DataManager._backupVersion;
-            }
-        }
-    }
-};*/
-
 const _data_manage_reserve_save_images_with_reroute = DataManager.loadSavefileImages;
 DataManager.loadSavefileImages = function(info) {
-    if (info.patch) { 
-        DataManager._backupVersion = DataManager._version;
-        DataManager._version = info.patch;
-    }
+
+    DataManager._backupVersion = DataManager._version;
+    DataManager._version = info.patch;
+    DataManager.loadEncryptionList();
     _data_manage_reserve_save_images_with_reroute.call(this, info)
-    if (info.patch) { //Restore version, in case we're in-game
-        DataManager._version = DataManager._backupVersion;
-    }
+    DataManager._version = DataManager._backupVersion;
+
 };
 
 const _image_manage_draw_party_with_reroute = Window_SavefileList.prototype.drawPartyCharacters;
 Window_SavefileList.prototype.drawPartyCharacters = function(info, x, y) {
-    if (info.patch) { 
-        DataManager._backupVersion = DataManager._version;
-        DataManager._version = info.patch;
-    } //Will cause it to use save's patch's images, if applicable
+
+    DataManager._backupVersion = DataManager._version;
+    DataManager._version = info.patch;
+    DataManager.loadEncryptionList();
+    //Will cause it to use save's patch's images, if applicable
     _image_manage_draw_party_with_reroute.call(this, info, x, y);
-    if (info.patch) { //Restore version, in case we're in-game
-        DataManager._version = DataManager._backupVersion;
-    }
+    DataManager._version = DataManager._backupVersion;
 };
 
 Window_SavefileList.prototype.drawContents = function(info, rect, valid) {
@@ -1759,10 +1802,6 @@ Window_SavefileList.prototype.drawContents = function(info, rect, valid) {
 
 //-----------------------------------------------------------------------------
 
-var LoadScriptFromDoc = Scene_Boot.prototype.initialize;
-Scene_Boot.prototype.initialize = function() {
-    ModManager.readScriptSettings(LoadScriptFromDoc.bind(this));
-};
 
 Window_Base.prototype.addWindow = function(window) {
     Scene_Base.prototype.addWindow.call(this, window);
@@ -1783,7 +1822,22 @@ DataManager.extractSaveContents = function(contents) {
     this.loadEncryptionList();
 }
 
-var quick_load_increment_lock = DataManager.loadDataFile;
+let plugin_manager_setup_dont_duplicate = PluginManager.setup;
+PluginManager.setup = function(plugins) {
+    if (DataManager._version && DataManager._version != "") {
+        plugins.forEach(function(plugin) {
+            if (plugin.status && !this._scripts.contains(plugin.name)) {
+                this.setParameters(plugin.name, plugin.parameters);
+                this.loadScript(plugin.name + '.js');
+                this._scripts.push(plugin.name);
+            }
+        }, this);
+    } else {
+        plugin_manager_setup_dont_duplicate.call(this, plugins);
+    }
+};
+
+let quick_load_increment_lock = DataManager.loadDataFile;
 DataManager.loadDataFile = function(name, src) {
     if (ModManager.quickLoad) {
         const backup = JSON.parse(JSON.stringify(window[name]));
@@ -1799,20 +1853,43 @@ DataManager.loadDataFile = function(name, src) {
     
 }
 
-var quick_load_fake_database = DataManager.onLoad;
+let quick_load_fake_database = DataManager.onLoad;
 DataManager.onLoad = function(object) {
     if (ModManager.quickLoad) {
-        quick_load_fake_database.call(DataManager, object);
         ModManager._loadLock -= 1;
-        if (ModManager._loadLock == 0) {
-            //ImageManager.clear(); //TODO - if it loads a special window, have to... undo that...
-            ModManager.queuedFunction.call();
+        if (ModManager._loadLock === 0) {
             ModManager.quickLoad = false;
+            DataManager._loadCount += 1;
+        }
+        quick_load_fake_database.call(DataManager, object);
+        
+        if (ModManager._loadLock == 0) {
+            /* THIS ONLY EXISTS TO GIVE OTHER PLUGINS A CHANCE TO
+             * RELOAD INFORMATION */
+            DataManager.isDatabaseLoaded();
+
+            ModManager.queuedFunction.call();
+            /* Don't count on anything being called after this, as it
+             * may be running the game */
         }
     } else {
         quick_load_fake_database.call(DataManager, object);
     }
 };
+
+/* THIS IS ONLY HERE BECAUSE SOME OTHER PLUGINS NEED HELP UNDERSTANDING
+ * THAT WE ARE RELOADING THE DATABASE */
+const quick_load_check_db_loaded = DataManager.isDatabaseLoaded;
+DataManager.isDatabaseLoaded = function() {
+    if (!this._loadCount) {this._loadCount = 0;}
+    let res = quick_load_check_db_loaded.call(this);
+    if (this._loadCount === 0) {
+        return res;
+    }
+    return !ModManager.quickLoad;
+}
+
+
 
 //-----------------------------------------------------------------------------
 // Window_TitleCommand
@@ -1846,20 +1923,18 @@ Scene_StartGame.prototype.create = function() {
     this.createCommandWindow();
 }
 Scene_StartGame.prototype.createCommandWindow = function() {
-    let fs = require('fs');
-    let path = require('path');
     let dir = path.join(ModManager._path, ModManager._installsFolder);
     let installs = (fs.existsSync(dir)) ? fs.readdirSync(dir) : [];
     installs.splice(0,0,ModManager._baseGameText);
-    this._commandWindow = new Window_CommandList(installs, 0, Graphics.boxHeight/2-40);
-    for (let i in installs) {
+    this._commandWindow = new Window_CommandList(installs, Graphics.boxHeight * ((1.0-0.70)/2.0), Graphics.boxHeight/2-40, {'width': Graphics.boxWidth * (0.70) });
+    for (let i = 0; i < installs.length; i++) {
         if (i > 0) {
             let version = installs[i];
             if (!version) { version = ""; } //default or vanilla game
             //this._commandWindow.addCommand(version, version);
             this._commandWindow.setHandler(installs[i], this.commandStart(version).bind(this));
         } else {
-            this._commandWindow.setHandler('|Base Game|', this.commandStart(null).bind(this));
+            this._commandWindow.setHandler('|Base Game|', this.commandStart("").bind(this));
         }
     }
     this._commandWindow.setHandler('cancel', this.popScene.bind(this));
@@ -1874,7 +1949,10 @@ Scene_StartGame.prototype.createBackground = function() {
 
 Scene_StartGame.prototype.commandStart = function(install) {
     return function() {
+        let prev_version = DataManager._version;
+        ModManager.changeSourceCode(prev_version, install);
         DataManager._version = install;
+        DataManager.loadEncryptionList();
         //Vanilla/base data files loaded at boot, once we start a game, reload them based on
         //  the patch
         let loadPatchDatabases = function() {
@@ -1882,7 +1960,6 @@ Scene_StartGame.prototype.commandStart = function(install) {
             this._commandWindow.close();
             this.fadeOutAll();
             SceneManager.pop(); //returns to Scene_Title, which calls init and would clear DataManager._version
-            ModManager.addScripts();
             this._loaded = true;
             SceneManager.goto(Scene_Map);
         }
@@ -1890,7 +1967,15 @@ Scene_StartGame.prototype.commandStart = function(install) {
         this._loaded = false;
         ModManager.queuedFunction = loadPatchDatabases.bind(this);
 
-        ModManager.loadPlugins();
+        ModManager.loadPlugins(prev_version);
+
+        //Save original encryption key;
+        //  Only do the first time - otherwise a "load" from a modded save would mess it up
+        if (!Decrypter._baseEncryptionKey) {
+            if ($dataSystem.encryptionKey) {
+                Decrypter._baseEncryptionKey = $dataSystem.encryptionKey.split(/(.{2})/).filter(Boolean);
+            }
+        }
 
         DataManager.loadDatabase();
     }
@@ -1920,7 +2005,6 @@ Scene_ModManage.prototype.create = function() {
     this.createBackground();
     this.createWindowLayer();
     this.createCommandWindow(showModCreationTab);
-    this.createScriptConfWindow();
     this.createPatchConfWindow();
     this.createSaveConvertWindow();
     
@@ -1944,7 +2028,6 @@ Scene_ModManage.prototype.createBackground = function() {
 Scene_ModManage.prototype.createCommandWindow = function(createPage = false) {
     this._commandWindow = new Window_ModTypeCommand(0, 0, createPage);
     this._commandWindow.setHandler('patches', this.commandPatch.bind(this));
-    this._commandWindow.setHandler('scripts', this.commandScript.bind(this));
     this._commandWindow.setHandler('save', this.commandSaveConvert.bind(this));
     if (createPage) {
         this._commandWindow.setHandler('create', this.commandPatchCreate.bind(this));
@@ -1957,12 +2040,6 @@ Scene_ModManage.prototype.createPatchConfWindow = function() {
     this._patchConfigWindow = new Window_ModPatchConfig(0, this._commandWindow.height);
     this._patchConfigWindow.setCancelHandler(this.restoreActive.bind(this));
     this.addWindow(this._patchConfigWindow);
-}
-
-Scene_ModManage.prototype.createScriptConfWindow = function() {
-    this._scriptConfigWindow = new Window_ModScriptConfig(0, this._commandWindow.height);
-    this._scriptConfigWindow.setCancelHandler(this.restoreActive.bind(this));
-    this.addWindow(this._scriptConfigWindow);
 }
 
 Scene_ModManage.prototype.createSaveConvertWindow = function() {
@@ -1985,10 +2062,6 @@ Scene_ModManage.prototype.restoreActive = function() {
     this._patchConfigWindow.deactivate();
     this._patchConfigWindow.hide();
 
-    this._scriptConfigWindow.close();
-    this._scriptConfigWindow.deactivate();
-    this._scriptConfigWindow.hide();
-
     if (this._saveConvertWindow) {
         this._saveConvertWindow.close();
         this._saveConvertWindow.deactivate();
@@ -2007,13 +2080,6 @@ Scene_ModManage.prototype.commandPatch = function() {
     this._patchConfigWindow.activate();
     this._patchConfigWindow.show();
     this._patchConfigWindow.init(); //init's the patch, so the user cannot cause a crash
-}
-
-Scene_ModManage.prototype.commandScript = function() {
-    this._commandWindow.deactivate();
-    this._scriptConfigWindow.open();
-    this._scriptConfigWindow.activate();
-    this._scriptConfigWindow.show();
 }
 
 Scene_ModManage.prototype.commandSaveConvert = function() {
@@ -2043,7 +2109,7 @@ Window_ModTypeCommand.prototype = Object.create(Window_Horz2.prototype);
 Window_ModTypeCommand.prototype.constructor = Window_ModTypeCommand;
 
 Window_ModTypeCommand.prototype.initialize = function(x, y, createPage = false) {
-    cols = (createPage) ? 4 : 3;
+    cols = (createPage) ? 3 : 2;
     this._hasCreatePage = createPage;
     this._showCreatePage = createPage;
     Window_Horz2.prototype.initialize.call(this, x, y, {'maxcols': cols});
@@ -2052,7 +2118,6 @@ Window_ModTypeCommand.prototype.initialize = function(x, y, createPage = false) 
 
 Window_ModTypeCommand.prototype.makeCommandList = function() {
     this.addCommand("Patches",      'patches', this.patchesAvailable());
-    this.addCommand("Scripts",      'scripts', this.pluginsAvailable());
     this.addCommand("Convert Save", 'save',    this.savesAvailable());
     if (this._hasCreatePage) {
         this.addCommand("Create",       'create',  this.createAvailable());
@@ -2061,9 +2126,6 @@ Window_ModTypeCommand.prototype.makeCommandList = function() {
     //provide user advice/inform user
     if (this._list[0].enabled == false) {
         this._list[0].name = "No patches detected in 'mods/patches/'";
-    }
-    if (this._list[1].enabled == false) {
-        this._list[1].name = "No scripts detected in 'mods/scripts/'"
     }
 }
 
@@ -2080,19 +2142,7 @@ Window_ModTypeCommand.prototype.defaultToFirstOption = function() {
 Window_ModTypeCommand.prototype.patchesAvailable = function() {
     var filepath = path.join(ModManager._path);
     if (fs.existsSync(filepath)) {
-        filepath = path.join(filepath, 'patches') 
-        if (fs.existsSync(filepath) && (fs.readdirSync(filepath).length > 0)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-//Must have the /mods/scripts folder setup to even try to use scripts
-Window_ModTypeCommand.prototype.pluginsAvailable = function() {
-    var filepath = ModManager._path;
-    if (fs.existsSync(filepath)) {
-        filepath = path.join(filepath, 'scripts');
+        filepath = path.join(filepath, ModManager._patchesFolder) 
         if (fs.existsSync(filepath) && (fs.readdirSync(filepath).length > 0)) {
             return true;
         }
@@ -2128,433 +2178,6 @@ Window_ModTypeCommand.prototype.createAvailable = function() {
     return false;
 }
 
-//-----------------------------------------------------------------------------
-// Window_ModScriptConfig
-//
-// Collection of Windows together let a user set parameters;
-// Contains a 3xN Window_Selectable, a confirm button, a Window_Textbox for input, and a help window
-
-function Window_ModScriptConfig() {
-    this.initialize.apply(this, arguments);
-}
-
-Window_ModScriptConfig.prototype = Object.create(Window_Base.prototype);
-Window_ModScriptConfig.prototype.constructor = Window_ModScriptConfig;
-
-Window_ModScriptConfig.prototype.initialize = function(x, y) {
-    Window_Base.prototype.initialize.call(this, x, y, Graphics.boxWidth - x, Graphics.boxHeight - y);
-    this._listIndex = 0;
-    this._menuState = [];
-    this.createWindows();
-    if (this.noScripts()) return;
-    for (var i in this._scriptChoicesWindow._list) {
-        this._menuState.push([0,0]); //[window index, paramList index]
-    }
-    this.refreshBoxes();
-    this.setState('list');
-};
-
-Window_ModScriptConfig.prototype.noScripts = function() {
-    return (this._scriptChoicesWindow._list.length == 0);
-}
-
-Window_ModScriptConfig.prototype.createWindows = function() {
-    this.createScriptListWindow();
-    this.createInputWindow();
-    this.createHelpWindow();
-    this.createToggleWindow();
-    this.createSubmitButton();
-    this.createParamListWindow();
-};
-
-Window_ModScriptConfig.prototype.setupToggle = function() {
-    var script = this._scriptChoicesWindow._list[this._listIndex].name;
-    this._toggleWindow.select(ModManager._scripts[script] ? 0 : 1);
-};
-
-Window_ModScriptConfig.prototype.setupParams = function() {
-    var script = this._scriptChoicesWindow._list[this._listIndex].name;
-    this._paramWindow.setCommandList(Object.keys(ModManager._parameters[script]), this._menuState[this._listIndex][1]);
-    this._paramWindow.setCursorRect(0,0,0,0); //hide cursors
-};
-
-Window_ModScriptConfig.prototype.setupDesc = function() {
-    this._descWindow.contents.clear();
-    var script = this._scriptChoicesWindow._list[this._listIndex].name;
-    var param = this._paramWindow.getResult();
-    var desc = (param) ? (ModManager._parameters[script][param.name].desc || "") : "";
-    this._descWindow.contents.fontSize = 12;
-    this._descWindow.drawWrapText(desc);
-};
-
-Window_ModScriptConfig.prototype.setupInput = function() {
-    var script = this._scriptChoicesWindow._list[this._listIndex].name;
-    var param = this._paramWindow.getResult();
-    this._inputWindow.hide(); //this._inputWindow.deactivate();
-    this._inputWindowT.hide(); //this._inputWindowT.deactivate();
-    this._inputWindowD.hide(); //this._inputWindowD.deactivate();
-    var def = (param)?(ModManager._parameters[script][param.name]._realValue || ""):"";
-    if (param && ModManager._parameters[script][param.name].values && ModManager._parameters[script][param.name].values.length > 1) {
-        //use drop-down
-        this._inputWindowD.show(); //this._inputWindowD.activate();
-        var values = ModManager._parameters[script][param.name].values;
-        this._inputWindowD.setCommandList(values, Math.max(0, values.indexOf(def)));
-        this._inputWindowD.setCursorRect(0,0,0,0); //hide cursors
-    } else if (param && (ModManager._parameters[script][param.name].on || ModManager._parameters[script][param.name].off)) {
-        //use toggle
-        this._inputWindowT.show(); //this._inputWindowD.activate();
-        this._inputWindowT.select((def)?0:1); //[On, Off]
-    } else {
-        //use textbox
-        this._inputWindow.show(); //this._inputWindow.activate();
-        var type = (param)?(ModManager._parameters[script][param.name].type || "string"):"string";
-        var min = (param)?(ModManager._parameters[script][param.name].min || null):null;
-        var max = (param)?(ModManager._parameters[script][param.name].max || null):null;
-        if (min && type == 'Number') min = Number(min); if (max && type == 'Number') max = Number(max);
-        if (min !== null) {
-            if (max !== null) {
-                var con = function(message) { return (min <= message && message <= max);}
-                this._inputWindow.setConstraint(con, "Value must be between "+min+" and "+max+".");
-            } else {
-                var con = function(message) { return (min <= message);}
-                this._inputWindow.setConstraint(con, "Value must be at least "+min+".");
-            }
-        } else if (max !== null) {
-            var con = function(message) { return (message <= max);}
-            this._inputWindow.setConstraint(con, "Value must not exceed "+max+".");
-        }
-        this._inputWindow.setHint(def, true);
-        this._inputWindow.setType(type);
-    }
-}
-
-Window_ModScriptConfig.prototype.goRight = function() {
-    SoundManager.playCursor();
-    var index = this._scriptChoicesWindow.index();
-    var windows = ['toggle', 'param', 'input', 'submit'];
-    this.setState(windows[this._menuState[index][0]]);
-};
-Window_ModScriptConfig.prototype.goLeft = function() {
-    SoundManager.playCursor();
-    var windows = ['toggle', 'param', 'input', 'submit'];
-    var script = this._scriptChoicesWindow._list[this._listIndex].name;
-    this._menuState[this._listIndex] = [windows.indexOf(this.state), this._paramWindow._dropIndex];
-    ModManager._scripts[script] = (this._toggleWindow.index() == 0);
-    ModManager.logScriptSettings();
-    this.setState('list');
-}
-
-Window_ModScriptConfig.prototype.isInputTouchedInsideFrame = function() {
-    //probably none of this matters
-    if (this._inputWindow.visible && this._inputWindow.isTouchedInsideFrame())
-        return true;
-    if (this._inputWindowT.visible && this._inputWindowT.isTouchedInsideFrame())
-        return true;
-    if (this._inputWindowD.visible) {
-        if (this._inputWindowD._selecting) {
-            return this._inputWindowD._options.isTouchedInsideFrame();
-        } else {
-            return this._inputWindowD.isTouchedInsideFrame();
-        }
-    }
-    return false;
-}
-
-Window_ModScriptConfig.prototype.update = function() {
-    var okTrigger = Input.isTriggered('ok');
-    var touchTrigger = TouchInput.isTriggered();
-    Window_Base.prototype.update.call(this);
-    if (!this.active || this.noScripts()) return;
-
-    if (touchTrigger) {
-        var state = null;
-        if (this._scriptChoicesWindow.isTouchedInsideFrame()) {
-            if (this.state != 'list') { this.goLeft(); return; }
-            else { state = 'list'; }
-        } else if (this._paramWindow.isTouchedInsideFrame() && this._paramWindow.visible) {
-            state = 'param';
-        } else if (this._toggleWindow.isTouchedInsideFrame()) {
-            state = 'toggle';
-        } else if (this.isInputTouchedInsideFrame()) {
-            state = 'input';
-        } else if (this._saveButton.isTouchedInsideFrame() && this._saveButton.visible) {
-            state = 'submit';
-        }
-        if (this._listIndex != this._scriptChoicesWindow.index()) {
-            this._listIndex = this._scriptChoicesWindow.index();
-            this.refreshBoxes();
-        }
-        this.setState(state);
-    } else {
-        //support movement between
-        if (this.state == 'list') {
-            if (Input.isTriggered('right') || okTrigger) {
-                this.goRight();//this.setState('param');
-            } else if (Input.isTriggered('down') || Input.isTriggered('up')) {
-                this._listIndex = this._scriptChoicesWindow.index();
-                this.refreshBoxes();
-            }
-        } else if (this.state == 'toggle') {
-            if (Input.isTriggered('left')) {
-                if (this._toggleWindow.index() == 1) {
-                    this._toggleWindow.select(0);
-                    this.goLeft();
-                }
-            } else if ((Input.isTriggered('down') || Input.isTriggered('ok'))&& this._paramWindow.visible) {
-                SoundManager.playCursor();
-                this.setState('param');
-            } else if (Input.isTriggered('cancel')) {
-                this.goLeft();
-            }
-        } else if (this.state == 'param') {
-            if (Input.isTriggered('left') || Input.isTriggered('cancel')) {
-                if (this._paramWindow._selecting) {
-                    this._paramWindow.revertUnfocus();
-                }
-                this.goLeft();
-            } else if (Input.isTriggered('up')) {
-                if (this._paramWindow._selecting) {
-                    if (this._paramWindow._options.index() == this._paramWindow._options._list.length - 1) {
-                        this._paramWindow.revertUnfocus();
-                        SoundManager.playCursor();
-                        //this.setState('toggle');
-                    }
-                } else {
-                    SoundManager.playCursor();
-                    this.setState('toggle');
-                }
-            } else if (Input.isTriggered('down')) {
-                //if choosing, but at the bottom of the list
-                if (this._paramWindow._selecting) {
-                    if (this._paramWindow._options.index() == 0) {
-                        this._paramWindow.revertUnfocus();
-                        SoundManager.playCursor();
-                        //this.setState('input');
-                    }
-                } else {
-                    SoundManager.playCursor();
-                    this.setState('input');
-                }
-            }
-            if (this._paramIndex != this._paramWindow._dropIndex) {
-                this._paramIndex = this._paramWindow._dropIndex;
-                this.setupDesc();
-                this.setupInput();
-            }
-        } else if (this.state == 'input') {
-            if (Input.isTriggered('down') || Input.isTriggered('Arrow Down')) {
-                    if (!this._inputWindowD.visible || !this._inputWindowD._selecting || (this._inputWindowD._options.index() === 0)) {
-                    SoundManager.playCursor();
-                    this.setState('submit');
-                  }
-            } else if (Input.isTriggered('up') || Input.isTriggered('Arrow Up')) {
-                    if (!this._inputWindowD.visible || !this._inputWindowD._selecting || (this._inputWindowD._options.index() === this._inputWindowD._options._list.length)) {
-                    SoundManager.playCursor();
-                    this.setState('param');
-                  }
-            } else if (Input.isTriggered('left') || Input.isTriggered('Arrow Left') || Input.isTriggered('Escape')) {
-                if (Input.isTriggered('left') && this._inputWindowT.visible && this._inputWindowT.index() == 1) {
-                    this._toggleWindow.select(0);
-                    this.goLeft();
-                } else if (Input.isTriggered('left') && !this._inputWindow.visible) {
-                        this.goLeft();
-                } else if (Keyboard._cursor_pos == 0) {
-                    this.goLeft();
-                }
-            }
-        } else if (this.state == 'submit') {
-            if (Input.isTriggered('left')) {
-                this.goLeft();
-            } else if (Input.isTriggered('up')) {
-                SoundManager.playCursor();
-                this.setState('input')
-            }
-        }
-    }
-};
-
-Window_ModScriptConfig.prototype.setState = function(state) {
-    if (state) {
-        this.state = state;
-        this._scriptChoicesWindow.deactivate();
-        this._toggleWindow.deactivate();
-        this._deactivateInput();
-        this._paramWindow.deactivate();
-        this._saveButton.deactivate();
-
-        this._paramWindow.setCursorRect(0,0,0,0); //hide cursors
-        this._inputWindowD.setCursorRect(0,0,0,0);
-        this._saveButton.setCursorRect(0,0,0,0); //hide cursors
-        switch(state) {
-            case 'list': this._scriptChoicesWindow.activate(); break;
-            case 'toggle': this._toggleWindow.activate(); break;
-            case 'input': this._activateInput(); this._inputWindow.refresh(); break;
-            case 'param': this._paramWindow.activate(); this._paramIndex = this._paramWindow._dropIndex; break;
-            case 'submit': this._saveButton.activate(); break;
-            default: return;
-        }
-        if (state != 'param') {
-            if (this._paramWindow._selecting) {
-                this._paramWindow.revertUnfocus();
-            }
-        }
-        if (state != 'input') {
-            if (this._inputWindowD._selecting) {
-                this._inputWindowD.revertUnfocus();
-            }
-        }
-    }
-}
-
-Window_ModScriptConfig.prototype.close = function() {
-    Window_Base.prototype.close.call(this);
-    this._scriptChoicesWindow.close();
-    this._toggleWindow.close();
-    this._inputWindow.close();
-    this._inputWindowT.close();
-    this._inputWindowD.close();
-    this._descWindow.close();
-    this._paramWindow.close();
-    this._saveButton.close();
-}
-Window_ModScriptConfig.prototype.open = function() {
-    Window_Base.prototype.open.call(this);
-    this._scriptChoicesWindow.open();
-    this._toggleWindow.open();
-    this._inputWindow.open();
-    this._inputWindowT.open();
-    this._inputWindowD.open();
-    this._descWindow.open();
-    this._paramWindow.open();
-    this._saveButton.open();
-}
-Window_ModScriptConfig.prototype.hide = function() {
-    Window_Base.prototype.hide.call(this);
-    this._scriptChoicesWindow.hide();
-    this._toggleWindow.hide();
-    this._inputWindow.hide();
-    this._inputWindowT.hide();
-    this._inputWindowD.hide();
-    this._descWindow.hide();
-    this._paramWindow.hide();
-    this._saveButton.hide();
-}
-Window_ModScriptConfig.prototype.show = function() {
-    Window_Base.prototype.show.call(this);
-    this._scriptChoicesWindow.show();
-    this._toggleWindow.show();
-    this.refreshBoxes();
-}
-Window_ModScriptConfig.prototype.activate = function() {
-    Window_Base.prototype.activate.call(this);
-    this.setState(this.state);
-}
-Window_ModScriptConfig.prototype.deactivate = function() {
-    Window_Base.prototype.deactivate.call(this);
-    this._scriptChoicesWindow.deactivate();
-    this._toggleWindow.deactivate();
-    this._deactivateInput();
-    this._descWindow.deactivate();
-    this._paramWindow.deactivate();
-    this._saveButton.deactivate();
-}
-
-Window_ModScriptConfig.prototype._activateInput = function() {
-    if (this._inputWindow.visible) this._inputWindow.activate();
-    if (this._inputWindowD.visible) this._inputWindowD.activate();
-    if (this._inputWindowT.visible) this._inputWindowT.activate();
-}
-
-Window_ModScriptConfig.prototype._deactivateInput = function() {
-    this._inputWindow.deactivate();
-    this._inputWindowD.deactivate();
-    this._inputWindowT.deactivate();
-}
-
-Window_ModScriptConfig.prototype.createScriptListWindow = function() {
-    var fs = require('fs');
-    var path = require('path');
-
-    var scripts = []; var curr_path = path.join(ModManager._path, 'scripts');
-    if (fs.existsSync(curr_path)) {
-        scripts = fs.readdirSync(curr_path);
-    }
-
-    this._scriptChoicesWindow = new Window_CommandList(Object.keys(ModManager._scripts), (1.0/16.0)*Graphics.boxWidth, ((1.0/16.0)*Graphics.boxHeight), {'width':(1.0/3.0)*Graphics.boxWidth, 'height':(3.0/4.0)*Graphics.boxHeight});
-    this.addChild(this._scriptChoicesWindow);
-    //this._scriptChoicesWindow.drawAllItems();
-};
-Window_ModScriptConfig.prototype.setCancelHandler = function(method) {
-    this._scriptChoicesWindow.setHandler('cancel', method);
-};
-Window_ModScriptConfig.prototype.createInputWindow = function() {
-    this._inputWindow = new Window_Textbox({'x':(5.0/8.0)*Graphics.boxWidth,'y':((3.0/8.0)*Graphics.boxHeight+this.lineHeight()/2),'width':(1.0/4.0)*Graphics.boxWidth, 'err_dir':'down'});
-    this._inputWindow.unlock(['up', 'down','left', 'Arrow Up', 'Arrow Down','Arrow Left','Escape']);
-    this._inputWindowT = new Window_CommandList(['On', 'Off'], (5.0/8.0)*Graphics.boxWidth, ((3.0/8.0)*Graphics.boxHeight), {'maxcols':2,'width':(1.0/4.0)*Graphics.boxWidth});
-    this._inputWindowD = new Window_Dropdown([], (5.0/8.0)*Graphics.boxWidth, ((3.0/8.0)*Graphics.boxHeight), {'align': 'center','default':true,'width': (1.0/4.0)*Graphics.boxWidth});
-    this.addChild(this._inputWindow);
-    this.addChild(this._inputWindowT);
-    this.addChild(this._inputWindowD);
-};
-Window_ModScriptConfig.prototype.createHelpWindow = function() {
-    this._descWindow = new Window_Base((9.0/16.0)*Graphics.boxWidth, (2.0/3.0 - 1.0/8.0)*Graphics.boxHeight+(this.lineHeight()/2.0), (3.0/8.0)*Graphics.boxWidth, (1.0/6.0)*Graphics.boxHeight );
-    this.addChild(this._descWindow);
-};
-Window_ModScriptConfig.prototype.createParamListWindow = function() {
-    this._paramWindow = new Window_Dropdown([], (9.0/16.0)*Graphics.boxWidth, (3.0/16.0)*Graphics.boxHeight+this.lineHeight(), {'align': 'top','default':true,'width': (3.0/8.0)*Graphics.boxWidth});
-    this.addChild(this._paramWindow);
-};
-Window_ModScriptConfig.prototype.createToggleWindow = function() {
-    this._toggleWindow = new Window_CommandList(['On', 'Off'], (11.0/16.0)*Graphics.boxWidth, (1.0/8.0)*Graphics.boxHeight-this.lineHeight(), {'maxcols':2,'width':(1.0/4.0)*Graphics.boxWidth});
-    this.addChild(this._toggleWindow);
-};
-Window_ModScriptConfig.prototype.createSubmitButton = function() {
-    this._saveButton = new Window_CommandList(['Save'], (5.0/8.0)*Graphics.boxWidth, (3.0/4.0)*Graphics.boxHeight, {'width':(1.0/4.0)*Graphics.boxWidth});
-    this._saveButton.setHandler('Save', this.writeChanges.bind(this));
-    this.addChild(this._saveButton);
-};
-Window_ModScriptConfig.prototype.writeChanges = function() {
-    this._saveButton.activate();
-    var val = null;
-    if (this._inputWindow.visible) {
-        val = this._inputWindow.message;
-    } else if (this._inputWindowT.visible) {
-        val = (this._inputWindowT.index()==0)?true:false;
-    } else if (this._inputWindowD.visible) {
-        val = this._inputWindowD.getResult().name;
-    }
-    if (val == null) {
-        //sound buzzer?
-    } else {
-        var script = this._scriptChoicesWindow._list[this._listIndex].name;
-        var param = this._paramWindow.getResult().name;
-        ModManager._parameters[script][param]._realValue = val;
-        ModManager.logScriptSettings();
-    }
-};
-Window_ModScriptConfig.prototype.refreshBoxes = function() {
-    this.contents.clear();
-    this.setupToggle(); //show enabled for this script
-    this.setupParams(); //show last selected param for this script
-    this.drawText("Enable:", (1.0/2.0)*Graphics.boxWidth, (1.0/8.0)*Graphics.boxHeight-this.lineHeight(), (1.0/4.0)*Graphics.boxWidth, 'left');
-    if (this._paramWindow.hasOptions()) {
-        this.setupDesc(); //show description for that param
-        this.setupInput(); //change default and type constraints on input
-        this._paramWindow.show();
-        this._descWindow.show();
-        this._saveButton.show();
-        this.drawText("Parameter:", (1.0/2.0)*Graphics.boxWidth, ((3.0/16.0)*Graphics.boxHeight)-this.lineHeight()/2, (1.0/4.0)*Graphics.boxWidth, 'left');
-        this.drawText("Input:", (1.0/2.0)*Graphics.boxWidth, ((3.0/8.0)*Graphics.boxHeight), (1.0/4.0)*Graphics.boxWidth, 'left');
-        this.drawText("Description:", (1.0/2.0)*Graphics.boxWidth, ((2.0/3.0 - 1.0/8.0)*Graphics.boxHeight-this.lineHeight()), (3.0/8.0)*Graphics.boxWidth, 'left');
-    } else {
-        this._inputWindow.hide();
-        this._inputWindowT.hide();
-        this._inputWindowD.hide();
-        this._paramWindow.hide();
-        this._descWindow.hide();
-        this._saveButton.hide();
-    }
-};
 
 //-----------------------------------------------------------------------------
 // Window_ModPatchConfig
@@ -2577,7 +2200,7 @@ Window_ModPatchConfig.prototype.initialize = function(x, y) {
 
     this.createWindows();
     if (this.noPatches()) return;
-    for (var i in this._patchChoicesWindow._list) {
+    for (let i = 0; i < this._patchChoicesWindow._list.length; i++) {
         this._menuState.push([[],0,1]); //last selected tags
     }
     this._rightState = 'init';
@@ -2674,7 +2297,7 @@ Window_ModPatchConfig.prototype.doExportFinal = function() {
   ModManager.dumpEncryptionList(dest);
 
   //clear tag settings:
-  for (var i in this._menuState) { this._menuState[i] = [[],0,1]; }
+  for (let i = 0; i < this._menuState.length; i++) { this._menuState[i] = [[],0,1]; }
 
   //log history and clear:
   const patchTxt = path.join(dest, 'patch.txt');
@@ -2694,9 +2317,9 @@ Window_ModPatchConfig.prototype.setupInput = function() {
 }
 
 Window_ModPatchConfig.prototype.setupHistory = function() {
-    var message = "";
+    let message = "";
     this._historyWindow.contents.clear();
-    for (var i in this._history) {
+    for (let i = 0; i < this._history.length; i++) {
         message += this._history[i];
     }
     this._historyWindow.drawWrapText(message, 20, 'left', 16);
@@ -2884,14 +2507,12 @@ Window_ModPatchConfig.prototype.deactivate = function() {
 }
 
 Window_ModPatchConfig.prototype.createPatchListWindow = function() {
-    var fs = require('fs');
-    var path = require('path');
 
-    var files = [];
-    var patches = []; var curr_path = path.join(ModManager._path, 'patches');
+    let files = [];
+    let patches = []; let curr_path = path.join(ModManager._path, 'patches');
     if (fs.existsSync(curr_path))
         files = fs.readdirSync(curr_path);
-    for (var i in files) {
+    for (let i = 0; i < files.length; i++) {
         if (fs.lstatSync(path.join(ModManager._path, 'patches', files[i])).isDirectory()) {
             patches.push(files[i]);
         }
@@ -3169,12 +2790,16 @@ Window_ModPatchCreate.prototype.setState = function(state) {
 Window_ModPatchCreate.prototype.refreshToggles = function(state) {
     if (this._toggle3Window.get()) { //if (this._toggle3Window.index() == 0) {
         //Using explicit diff list, turn off first two toggles
-        this._toggle1Window.setColor(this._toggleDisabledColor);
-        this._toggle2Window.setColor(this._toggleDisabledColor);
+        this._toggle1Window.setDisableColor(this._toggleDisabledColor);
+        this._toggle2Window.setDisableColor(this._toggleDisabledColor);
+        this._toggle1Window.setDisableFontColor(this._toggleDisabledColor);
+        this._toggle2Window.setDisableFontColor(this._toggleDisabledColor);
     } else {
         //Not using explicit diff list, turn on first two toggles
-        this._toggle1Window.setColor(this._toggleSelectableColor);
-        this._toggle2Window.setColor(this._toggleSelectableColor);
+        this._toggle1Window.setDisableColor(this._toggleSelectableColor);
+        this._toggle2Window.setDisableColor(this._toggleSelectableColor);
+        this._toggle1Window.setDisableFontColor(this._toggleSelectableColor);
+        this._toggle2Window.setDisableFontColor(this._toggleSelectableColor);
     }
 
     //If any of the toggles is selected/active, mark it with a special color
@@ -3250,17 +2875,17 @@ Window_ModPatchCreate.prototype.createHelpWindow = function() {
 };
 /* I apologize for deciding toggle 3 should actually be on the top after making this */
 Window_ModPatchCreate.prototype.createToggle1Window = function() {
-    this._toggle1Window = new Window_Checkbox((1.0/4.0)*Graphics.boxWidth-10, (3.0/8.0)*Graphics.boxHeight, 20, {'text':'Compare Assets', 'color':this._toggleSelectedColor, 'disable': '#ffffff', 'direction':'up'});
+    this._toggle1Window = new Window_Checkbox((1.0/4.0)*Graphics.boxWidth-10, (3.0/8.0)*Graphics.boxHeight, 20, {'text':'Compare Assets', 'color':this._toggleSelectedColor, 'disable': this._toggleSelectableColor, 'disable_font_color':this._toggleSelectableColor, 'direction':'up'});
     this._toggle1Window.set(false); //Default to Off
     this.addChild(this._toggle1Window);
 };
 Window_ModPatchCreate.prototype.createToggle2Window = function() {
-    this._toggle2Window = new Window_Checkbox((1.0/4.0)*Graphics.boxWidth-10, (1.0/2.0)*Graphics.boxHeight, 20, {'text':'Compare Scripts', 'color':this._toggleSelectedColor, 'disable': '#ffffff', 'direction':'up'});
+    this._toggle2Window = new Window_Checkbox((1.0/4.0)*Graphics.boxWidth-10, (1.0/2.0)*Graphics.boxHeight, 20, {'text':'Compare Scripts', 'color':this._toggleSelectedColor, 'disable': this._toggleSelectableColor, 'disable_font_color':this._toggleSelectableColor, 'direction':'up'});
     this._toggle2Window.set(false); //Default to Off
     this.addChild(this._toggle2Window);
 };
 Window_ModPatchCreate.prototype.createToggle3Window = function() {
-    this._toggle3Window = new Window_Checkbox((1.0/4.0)*Graphics.boxWidth-10, (1.0/4.0)*Graphics.boxHeight, 20, {'text':'Use File List', 'color':this._toggleSelectedColor, 'disable': '#ffffff', 'direction':'up'});
+    this._toggle3Window = new Window_Checkbox((1.0/4.0)*Graphics.boxWidth-10, (1.0/4.0)*Graphics.boxHeight, 20, {'text':'Use File List', 'color':this._toggleSelectedColor, 'disable': this._toggleSelectableColor, 'disable_font_color':this._toggleSelectableColor, 'direction':'up'});
     this._toggle3Window.set(false); //Default to Off
     this.addChild(this._toggle3Window);
 };
@@ -3282,6 +2907,7 @@ Window_ModPatchCreate.prototype.setupDesc = function() {
         'toggle3': "Setting this to On means that the patch creator will only update/patch/overwrite files specified (via full filepath) in "+ModManager._listFileName+"."
     }
     let desc = (descriptions[this._state] || "");
+    this._descWindow.contents.fontColor = '#ffffff';
     this._descWindow.contents.fontSize = 12;
     this._descWindow.drawWrapText(desc);
 };
@@ -3404,6 +3030,7 @@ Window_SaveConvert.prototype.createWindows = function(dx, dy) {
     this.createSelectedSaveSprite(dx, dy);
     this.createShadeSprite();
     this.createOverwriteConfWindow();
+    this.createHelpWindow(dx, dy);
 };
 
 Window_SaveConvert.prototype.savefileId = function() {
@@ -3469,15 +3096,24 @@ Window_SaveConvert.prototype.createSelectedSaveSprite = function(dx, dy) {
     this.addChild(this._saveSprite);
 }
 
+Window_SaveConvert.prototype.createHelpWindow = function(dx, dy) {
+    const x = Graphics.boxWidth/2 + dx;
+    const y = dy+(3/4)*(Graphics.boxHeight - dy);
+    const width = Graphics.boxWidth/2;
+    const height = (1/4)*(Graphics.boxHeight - dy);
+    this._descWindow = new Window_Base(x, y, width, height);
+    this.addChild(this._descWindow);
+};
+
 //Code is ripped from vanilla Window_SavefileList: drawItem;
 //  I didn't want to make a new window class for this, so I expanded
 //  the classes functions into this
 Window_SaveConvert.prototype.drawSelectedSaveSprite = function(savefileId) {
-    var info = DataManager.loadSavefileInfo(savefileId);
+    let info = DataManager.loadSavefileInfo(savefileId);
     this._saveSprite.contents.clear();
     this._saveSprite.resetTextColor();
 
-    var textRect = new Rectangle;
+    let textRect = new Rectangle;
     textRect.x = this._saveSprite.x;
     textRect.y = this._saveSprite.y;
     textRect.width = this._saveSprite.width;
@@ -3486,7 +3122,7 @@ Window_SaveConvert.prototype.drawSelectedSaveSprite = function(savefileId) {
     this._saveSprite.drawText(TextManager.file + ' ' + savefileId, 0, 0, 180);
     if (info) {
         //this.changePaintOpacity(valid); <- TODO look into this for "disabling" Toggles 1 and 2
-        var bottom = textRect.height - 2*this.standardPadding();
+        let bottom = textRect.height - 2*this.standardPadding();
         //Draw game title and party, if able
         if (true || textRect.width >= 420) {
             if (info.patch) { 
@@ -3500,8 +3136,8 @@ Window_SaveConvert.prototype.drawSelectedSaveSprite = function(savefileId) {
             }
             //Draw party if able
             if (info.characters) {
-                for (var i = 0; i < info.characters.length; i++) {
-                    var data = info.characters[i];
+                for (let i = 0; i < info.characters.length; i++) {
+                    let data = info.characters[i];
                     this._saveSprite.drawCharacter(data[0], data[1], 24 + i * 48, (bottom - 4));
                 }
             }
@@ -3510,8 +3146,8 @@ Window_SaveConvert.prototype.drawSelectedSaveSprite = function(savefileId) {
                 DataManager._version = DataManager._backupVersion;
             }
         }
-        var lineHeight = this.lineHeight();
-        var y2 = bottom - lineHeight;
+        let lineHeight = this.lineHeight();
+        let y2 = bottom - lineHeight;
         if (y2 >= lineHeight) {
             //Draw playtime if able
             if (info.playtime) {
@@ -3556,6 +3192,7 @@ Window_SaveConvert.prototype.update = function() {
                 this.setState('list');
                 return;
             case 'list2':
+                this._listWindow.select(this._firstIndex-1);
                 this.setState('mod');
                 return;
             case 'conf':
@@ -3572,6 +3209,7 @@ Window_SaveConvert.prototype.update = function() {
             if (this.state == 'list2') {
                 SoundManager.playCancel();
             }
+            this._listWindow.select(this._firstIndex-1);
             state = 'mod';
         } else if (this.state == 'conf' && !this._confirmWindow.isTouchedInsideFrame()) {
             this.exitConfirm(false);
@@ -3600,7 +3238,10 @@ Window_SaveConvert.prototype.update = function() {
                 this.refreshModList();
                 state = 'list';
             } else if (okTrigger) {
-                if (this._modListWindow.index() && this._modListWindow.index() >= 0) {
+                /* Make sure that an option is selected - if the save has no
+                 * currently existing/recognized patch (or no data at all),
+                 * then can choose that "patch" to convert to */
+                if (this._modListWindow.index() >= 0) {
                   SoundManager.playCursor();
                   this._firstIndex = this.savefileId();
                   state = 'list2';
@@ -3617,6 +3258,7 @@ Window_SaveConvert.prototype.update = function() {
             if (Input.isTriggered('right')) {
                 if (this._modListWindow.visible) {
                     SoundManager.playCancel();
+                    this._listWindow.select(this._firstIndex-1);
                     state = 'mod';
                 }
            } else if (okTrigger) {
@@ -3666,6 +3308,7 @@ Window_SaveConvert.prototype.onConvertOk = function() {
     const restore = DataManager._version;
     DataManager.loadGame(this._firstIndex);
     DataManager._version = newVersion;
+    DataManager.loadEncryptionList();
 
     function saveWithDataStructs() {
         Graphics.frameCount = $gameSystem._framesOnSave;
@@ -3679,7 +3322,7 @@ Window_SaveConvert.prototype.onConvertOk = function() {
         //If the patch comes with a custome conversion function/script, load it and run it while
         const convertFile = path.join(ModManager._path, ModManager._installsFolder, ModManager._convertFilename);
         if (fs.existsSync(convertFile)) {
-            const script = ModManager.loadScriptSettings(convertFile);
+            const script = ModManager.loadScript(convertFile);
             ModManager.convertSave(); // <- Function Implemented by Modder in convert.js
             document.body.removeChild(script)
         }
@@ -3724,6 +3367,19 @@ Window_SaveConvert.prototype.refreshModList = function() {
     }
 }
 
+Window_SaveConvert.prototype.refreshDesc = function() {
+    const descriptions = {
+        'list': "Select the save data you want to convert.",
+        'mod': "Select the mod installation that you wish to convert to.",
+        'list2': "Pick the save slot that you want the converted version of the save to be stored to.",
+        'conf': "Select whether you want to overwrite the save file that was already in that spot.",
+    }
+    let desc = (descriptions[this.state] || "");
+    this._descWindow.contents.fontColor = '#ffffff';
+    this._descWindow.contents.fontSize = 24;
+    this._descWindow.drawWrapText(desc);
+}
+
 Window_SaveConvert.prototype.setState = function(newState) {
     this.state = newState;
     switch(newState) {
@@ -3760,6 +3416,7 @@ Window_SaveConvert.prototype.setState = function(newState) {
             this._tintSprite.visible = true;
             break;
     }
+    this.refreshDesc();
     if (this._modListWindow.visible) { this.refreshModList(); }
 }
 
@@ -3772,18 +3429,21 @@ Window_SaveConvert.prototype.close = function() {
     this._listWindow.close();
     this._modListWindow.close();
     this._confirmWindow.close();
+    this._descWindow.close();
 }
 Window_SaveConvert.prototype.open = function() {
     Window_Base.prototype.open.call(this);
     this._listWindow.open();
     this._modListWindow.open();
     this._confirmWindow.open();
+    this._descWindow.open();
 }
 Window_SaveConvert.prototype.hide = function() {
     Window_Base.prototype.hide.call(this);
     this._listWindow.hide();
     this._modListWindow.hide();
     this._confirmWindow.hide();
+    this._descWindow.hide();
     this._saveSprite.hide();
     this._tintSprite.visible = false;
 }
@@ -3791,6 +3451,7 @@ Window_SaveConvert.prototype.show = function() {
     Window_Base.prototype.show.call(this);
     this._listWindow.show();
     this._modListWindow.show();
+    this._descWindow.show();
     this.setState(this.state);
 }
 Window_SaveConvert.prototype.activate = function() {
@@ -3803,6 +3464,7 @@ Window_SaveConvert.prototype.deactivate = function() {
     this._listWindow.deactivate();
     this._modListWindow.deactivate();
     this._confirmWindow.deactivate();
+    this._descWindow.deactivate();
 }
 
 
@@ -3841,6 +3503,19 @@ AutoDiffLogger.reportSuccess = function(fileA, fileB, fileC) {
     this.logger.log("Successfully created file: "+fileC+" from files "+fileA+" "+fileB, this._successColor);
 }
 
+AutoDiffLogger.reportFound = function(fileA, fileB) {
+    fileA = fileA.replace(ModManager._path, '');
+    fileB = fileB.replace(path.dirname(process.mainModule.filename),'');
+    this.logger.log("Registering changed file: "+fileA+" vs "+fileB+"; task queued.", this._normalColor);
+    //requestAnimationFrame(); //Write immediately
+}
+
+AutoDiffLogger.reportFoundNew = function(fileB) {
+    fileB = fileB.replace(path.dirname(process.mainModule.filename),'');
+    this.logger.log("Registering new file: "+fileB+"; task queued.", this._normalColor);
+    //requestAnimationFrame(); //Write immediately
+}
+
 AutoDiffLogger.reportStart = function(fileA, fileB, fileC) {
     fileA = fileA.replace(ModManager._path, '');
     fileB = fileB.replace(path.dirname(process.mainModule.filename),'');
@@ -3865,7 +3540,9 @@ function AutoDiff() {
 
 /* Checks if an object equals "{}" */
 AutoDiff.isEmpty = function(obj) {
-    for (var prop in obj) {
+    const props = Object.keys(obj);
+    for (let i = 0; i < props.length; i++) {
+        const prop = props[i];
         if (obj.hasOwnProperty(prop)) {
             return false;
         }
@@ -3907,23 +3584,23 @@ AutoDiff.listDiff = function(a, b) {
         const n = _a.length;
         const m = _b.length;
         const max = n+m;
-        var v = new Array(2*max+1).fill(0);
+        let v = new Array(2*max+1).fill(0);
         const li = loopIndex(v.length);
         
         v[1] = 0;
-        var trace = [];
+        let trace = [];
         
         //Crawl down the edit graph breadth first - compute
         //  greedy farthest-reaching d-path along each diagonal k
         //  d represents "depth" in terms of non-diagonal paths taken
         //  in the edit graph
-        for (var d = 0; d <= max; d += 1) {
+        for (let d = 0; d <= max; d += 1) {
             trace.push(v.slice(0)); //slice(0) is just a quick way to shallow copy/clone
 
             //Original script ranges k from -d to +d, but it was written in Ruby, which
             //  allows negative indexing (k will be used to index into an array) which
             //  does not work in JS
-            for (var k = -d; k <= d; k += 2) {
+            for (let k = -d; k <= d; k += 2) {
                 //If k defines our vertical boundary, keep moving vertical
                 //If k defines our horizontal boundary, cannot let it move vertical
                 //Final rule is just a tie-breaker; we could reverse it, maybe get
@@ -3971,18 +3648,18 @@ AutoDiff.listDiff = function(a, b) {
 
     function backtrack(trace) {
         if (trace.length == 0) return;
-        var x = a.length;
-        var y = b.length;
-        var li = loopIndex(trace[0].length);
+        let x = a.length;
+        let y = b.length;
+        let li = loopIndex(trace[0].length);
         
-        var prev_x;
-        var prev_y;
-        var prev_k;
+        let prev_x;
+        let prev_y;
+        let prev_k;
 
         //Warning: reverse is inplace, so make sure we only need to do this once, ever
         trace.reverse();
-        var index = 0;
-        for (var d = trace.length - 1; d >= 0; d -= 1) {
+        let index = 0;
+        for (let d = trace.length - 1; d >= 0; d -= 1) {
             const k = x - y;
             const v = trace[index];
 
@@ -4122,6 +3799,28 @@ AutoDiff.getModKey = function() {
     }
 }
 
+AutoDiff.getOrigRef = function() {
+    let file = fs.readFileSync(path.join(ModManager._base, 'js', 'rpg_core.js'), {encoding:'utf8'});
+    file.replace(/Decrypter\.SIGNATURE(?:\s)*=(?:\s)("(?:.+)");/g, function(match, string, offset, file) {
+        this._baseRef.SIGNATURE = JSON.parse(string);
+        return '';
+    }.bind(this));
+    file.replace(/Decrypter\.VER(?:\s)*=(?:\s)("(?:.+)");/g, function(match, string, offset, file) {
+        this._baseRef.VER = JSON.parse(string);
+        return '';
+    }.bind(this));
+    file.replace(/Decrypter\.REMAIN(?:\s)*=(?:\s)("(?:.+)");/g, function(match, string, offset, file) {
+        this._baseRef.REMAIN = JSON.parse(string);
+        return '';
+    }.bind(this));
+}
+
+AutoDiff.getOrigEncryptFlags = function() {
+    const sys = JSON.parse(fs.readFileSync(path.join(ModManager._base, 'data', 'System.json'), {encoding:'utf8'})); //Assumes data file exists
+    this._baseRef.hasEncryptedAudio = sys.hasEncryptedAudio;
+    this._baseRef.hasEncryptedImages = sys.hasEncryptedImages;
+}
+
 /*  Important notes/lessons learned from experimenting:
  *   - By the end of Decrypter.decryptArrayBuffer, the arrayBuffer
  *     contents will match/be equal to those of an unecnrypted file
@@ -4140,16 +3839,33 @@ AutoDiff.getModKey = function() {
  *
  */
 
+
 AutoDiff.unencryptBytesEqual = function(baseBuffer, patchBuffer, baseKey, patchKey, name) {
     //Whether to decrypt mod/patch file:
     const needsDecrypt1 = (((name.match(/\.(png|rpgmvp)$/i) && $dataSystem.hasEncryptedImages) ||
                                                  (name.match(/\.(mp4|ogg|rpgmvo|rpgmvm)$/i) && $dataSystem.hasEncryptedAudio)) &&
                                                  (patchKey != null));;
     //Whether to decrypt base file:
-    const sys = JSON.parse(fs.readFileSync(path.join(ModManager._base, 'data', 'System.json'), {encoding:'utf8'})); //Assumes data file exists
-    const needsDecrypt2 = (((name.match(/\.(png|rpgmvp)$/i) && sys.hasEncryptedImages) ||
-                                                 (name.match(/\.(mp4|ogg|rpgmvo|rpgmvm)$/i) && sys.hasEncryptedAudio)) &&
+    const needsDecrypt2 = (((name.match(/\.(png|rpgmvp)$/i) && this._baseRef.hasEncryptedImages) ||
+                                                 (name.match(/\.(mp4|ogg|rpgmvo|rpgmvm)$/i) && this._baseRef.hasEncryptedAudio)) &&
                                                  (baseKey != null));
+    /* If the header is not ignored, then any "bad header" that is found, will assumed
+     * to be unusable/corrupted. It will return "true" to signify that the file should not
+     * be included in the patch.
+     */
+    if (this._ignoreHeaders) {
+        let pb = patchBuffer.slice(Decrypter._headerlength);
+        let bb = baseBuffer.slice(Decrypter._headerlength);
+
+        if (needsDecrypt1) {
+            pb = pb.slice(Decrypter._headerlength);
+        }
+        if (needsDecrypt2) {
+            bb = bb.slice(Decrypter._headerlength);
+        }
+        return (pb.equals(bb));
+    }
+
     //Decrypt modded file contents as needed
     if (needsDecrypt1) {
         let header = new Uint8Array(patchBuffer, 0, Decrypter._headerlength);
@@ -4161,46 +3877,51 @@ AutoDiff.unencryptBytesEqual = function(baseBuffer, patchBuffer, baseKey, patchK
         }
         for (i = 0; i < Decrypter._headerlength; i++) {
             if (header[i] !== refBytes[i]) {
-                throw new Error("Header is wrong");
+                console.log("Header is wrong: "+name);
+                return true;
+                //throw new Error("Header is wrong");
             }
         } 
 
-        patchBuffer = Decrypter.cutArrayHeader(patchBuffer, Decrypter._headerlength);
-        let view = new DataView(patchBuffer.buffer);
-        Decrypter._encryptionKey = patchKey;
+        let tpatchBuffer = patchBuffer.buffer;
+        tpatchBuffer = Decrypter.cutArrayHeader(tpatchBuffer, Decrypter._headerlength);
+        let view = new DataView(tpatchBuffer);
         if (patchBuffer) {
-            let byteArray = new Uint8Array(patchBuffer);
+            let byteArray = new Uint8Array(tpatchBuffer);
             for (i = 0; i < Decrypter._headerlength; i++) {
-                byteArray[i] = byteArray[i] ^ parseInt(Decrypter._encryptionKey[i], 16);
+                byteArray[i] = byteArray[i] ^ parseInt(patchKey[i], 16);
                 view.setUint8(i, byteArray[i]);
             }
         }
+        patchBuffer = new Buffer(tpatchBuffer);
     }
     //Decrypt base file contents as needed
     if (needsDecrypt2) {
         let header = new Uint8Array(baseBuffer, 0, Decrypter._headerlength);
         let i;
-        let ref = Decrypter.SIGNATURE + Decrypter.VER + Decrypter.REMAIN;
+        let ref = this._baseRef.SIGNATURE + this._baseRef.VER + this._baseRef.REMAIN;
         let refBytes = new Uint8Array(16);
         for (i = 0; i < Decrypter._headerlength; i++) {
             refBytes[i] = parseInt("0x" + ref.substr(i * 2, 2), 16);
         }
         for (i = 0; i < Decrypter._headerlength; i++) {
             if (header[i] !== refBytes[i]) {
-                throw new Error("Header is wrong");
+                console.log("Header is wrong: "+name)
+                //throw new Error("Header is wrong");
             }
         } 
-
-        baseBuffer = Decrypter.cutArrayHeader(baseBuffer, Decrypter._headerlength);
-        let view = new DataView(baseBuffer.buffer);
-        Decrypter._encryptionKey = baseKey;
+        let tbaseBuffer = baseBuffer.buffer;
+        tbaseBuffer = Decrypter.cutArrayHeader(tbaseBuffer, Decrypter._headerlength);
+        //let acopy = baseBuffer.slice();
+        let view = new DataView(tbaseBuffer);
         if (baseBuffer) {
-            let byteArray = new Uint8Array(baseBuffer);
+            let byteArray = new Uint8Array(tbaseBuffer);
             for (i = 0; i < Decrypter._headerlength; i++) {
-                byteArray[i] = byteArray[i] ^ parseInt(Decrypter._encryptionKey[i], 16);
+                byteArray[i] = byteArray[i] ^ parseInt(baseKey[i], 16);
                 view.setUint8(i, byteArray[i]);
             }
         }
+        baseBuffer = new Buffer(tbaseBuffer);
     }
     
     baseBuffer = new Buffer(baseBuffer);
@@ -4225,7 +3946,7 @@ AutoDiff.encryptNameMirror = function(filename) {
     return null;
 }
 
-AutoDiff.readProperVersion = function(filename, encoding) {
+AutoDiff.readProperVersion = function(filename, encoding={}) {
     if (fs.existsSync(filename)) {
         return fs.readFileSync(filename, encoding)
     } else {
@@ -4258,7 +3979,7 @@ AutoDiff.handleTasks = function() {
         fs.writeFileSync(newFile, JSON.stringify(diff), {encoding: 'utf8'});
         AutoDiffLogger.reportSuccess(origFile, patchFile, newFile);
     } else if (taskType == OVERWRITE) {
-        fs.writeFileSync(newFile, this.readProperVersion(patchFile, {encoding: 'utf8'}));
+        fs.writeFileSync(newFile, this.readProperVersion(patchFile));
         AutoDiffLogger.reportOverwrite(patchFile, newFile);
     }
 
@@ -4279,6 +4000,10 @@ AutoDiff.createPatch = function(config, name) {
   const useList = config['explicit_list'];
   const orig_key = this.getOrigKey();
   const mod_key = this.getModKey();
+  this._baseRef = {}
+  this.getOrigRef();
+  this.getOrigEncryptFlags();
+  this._ignoreHeaders = !ModManager._checkAssetHeaders;
   this.taskList = [];
 
   const DIFF = 0;
@@ -4286,76 +4011,86 @@ AutoDiff.createPatch = function(config, name) {
   const OVERWRITE = 2;
 
   if (useList) {
-    let list = [];
+    let fileList = [];
     try {
+        /* Sorry in advance if "fileList" vs "listFile" is confusing */
         const listFile = path.join(path.dirname(path.dirname(process.mainModule.filename)), 'mods', ModManager._listFileName)
-        list = JSON.parse(fs.readFileSync(listFile, {encoding: 'utf8'}));
+        fileList = JSON.parse(fs.readFileSync(listFile, {encoding: 'utf8'}));
     } catch (error) {
         console.log("Failed to parse LIST file for patch/diff creation.");
         return;
     }
-    function fileDiffSequential(fileList, parentPath="") {
+    function fileDiffSequential(list, parentPath="") {
+        //path to asset in original/source install
         const src = path.join(ModManager._base,parentPath);
-        for (var k in list) {
+        //path to asset in current/modded/patched install
+        const curr = path.join(root,parentPath);
+        for (let k = 0; k < list.length; k++) {
             const file = list[k];
 
             const orig = path.join(src, file);
             const patch = path.join(curr, file);
 
-            const orig_bytes = this.readProperVersion(orig);
-            const patch_bytes = this.readProperVersion(patch);
-            if (!orig_bytes.equals(patch_bytes)) {
-                //If the file to be compared is a JSON object
-                if (file.match(/\.json$/i)) {
-                    //Copy the diff of the two files named "file" into the patch folder
-                    const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
-                    //Make sure requisite parent directory hierarchy exists
-                    //  that the file will be written into
+            /* Assumes that the file exists in the current/modded version - otherwise,
+             * they shouldn't have put it in the LIST.txt */
+            if (fs.existsSync(orig)) {
 
-                    this.taskList.push([DIFF, orig, patch, newfile]);
-                    /*
-                    this.createReqDirectories(newfile);
-                    AutoDiffLogger.reportStart(orig, patch, newfile);
-                    let diff = this.diff(orig, patch);
-                    fs.writeFileSync(newfile, JSON.stringify(diff), {encoding: 'utf8'});
-                    AutoDiffLogger.reportSuccess(orig, patch, newfile);
-                    */
-                //If the file to be compared is an asset file
-                } else if (file.match(/\.(png|mp4|m4a|ogg|rpgmvp|rpgmvo|rpgmvm)$/i)) {
-                    //Make sure that the difference in bytes between new and old isn't just
-                    //  due to encryption differences
-                    if (this.unencryptBytesEqual(orig_bytes, patch_bytes, orig_key, mod_key, file)) continue;
-                    //Copy new image/audio/asset into
-                    const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
-                    //Make sure requisite parent directory hierarchy exists
-                    //  that the file will be written into
-                    this.taskList.push([OVERWRITE, orig, patch, newfile])
-                    /*
-                    this.createReqDirectories(newfile);
-                    fs.writeFileSync(newfile, patch_bytes);
-                    AutoDiffLogger.reportOverwrite(orig, newfile);
-                    */
-                //If the file to be compared is a text or script file
-                } else if (file.match(/\.(txt|csv)$/i) || file.match(/\.js$/i)){
-                    const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
-                    //Make sure requisite parent directory hierarchy exists
-                    //  that the file will be written into
+                const orig_bytes = this.readProperVersion(orig);
+                const patch_bytes = this.readProperVersion(patch);
+                if (!orig_bytes.equals(patch_bytes)) {
+                    //If the file to be compared is a JSON object
+                    if (file.match(/\.json$/i)) {
+                        //Copy the diff of the two files named "file" into the patch folder
+                        const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
+                        //Make sure requisite parent directory hierarchy exists
+                        //  that the file will be written into
 
-                    this.taskList.push([TEXTDIFF, orig, patch, newfile])
-                    /*
-                    this.createReqDirectories(newfile);
-                    AutoDiffLogger.reportStart(orig, patch, newfile);
-                    let diff = this.textDiff(orig, patch);
-                    fs.writeFileSync(newfile, JSON.stringify(diff), {encoding: 'utf8'});
-                    AutoDiffLogger.reportSuccess(orig, patch, newfile);
-                    */
+                        AutoDiffLogger.reportFound(orig, patch);
+                        this.taskList.push([DIFF, orig, patch, newfile]);
+
+                    //If the file to be compared is an asset file
+                    } else if (file.match(/\.(png|mp4|m4a|ogg|rpgmvp|rpgmvo|rpgmvm)$/i)) {
+                        //Make sure that the difference in bytes between new and old isn't just
+                        //  due to encryption differences
+                        if (this.unencryptBytesEqual(orig_bytes, patch_bytes, orig_key, mod_key, file)) continue;
+                        //Copy new image/audio/asset into
+                        const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
+                        //Make sure requisite parent directory hierarchy exists
+                        //  that the file will be written into
+                        AutoDiffLogger.reportFound(orig, patch);
+                        this.taskList.push([OVERWRITE, orig, patch, newfile])
+
+                    //If the file to be compared is a text or script file
+                    } else if (file.match(/\.(txt|csv)$/i) || file.match(/\.js$/i)){
+                        const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
+                        //Make sure requisite parent directory hierarchy exists
+                        //  that the file will be written into
+
+                        AutoDiffLogger.reportFound(orig, patch);
+                        this.taskList.push([TEXTDIFF, orig, patch, newfile])
+
+                    }
                 }
+            //File exists in modded directory but not base directory:
+            } else {
+                //No "asset compare" or "script compare" arguments in a LIST-based diff;
+                //  exactly every file specified in the list is "diffed", or in this case,
+                //  copied
+
+                //Copy it into the patch, it's new content
+                const patch = path.join(curr, file);
+                const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
+                //Make sure requisite parent directory hierarchy exists
+                //  that the file will be written into
+
+                AutoDiffLogger.reportFoundNew(patch);
+                this.taskList.push([OVERWRITE, "", patch, newfile])
             }
         }
     }
     fileDiffSequential = fileDiffSequential.bind(this);
     //Perform the diff on the files
-    fileDiffSequential(list);
+    fileDiffSequential(fileList);
 
   //If we are not given a list, but instead must search for changes ourselves
   } else {
@@ -4397,31 +4132,23 @@ AutoDiff.createPatch = function(config, name) {
                                 //Make sure requisite parent directory hierarchy exists
                                 //  that the file will be written into
 
+                                AutoDiffLogger.reportFound(orig, patch);
                                 this.taskList.push([DIFF, orig, patch, newfile])
-                                /*
-                                this.createReqDirectories(newfile);
-                                AutoDiffLogger.reportStart(orig, patch, newfile);
-                                let diff = this.diff(orig, patch);
-                                fs.writeFileSync(newfile, JSON.stringify(diff), {encoding: 'utf8'});
-                                AutoDiffLogger.reportSuccess(orig, patch, newfile);
-                                */
+
                             //If asset compare flag is checked, we can copy in new/changed assets;
                             //  files with extensions that are not common are copied regardless, to be safe
                             } else if (file.match(/\.(png|mp4|m4a|ogg|rpgmvp|rpgmvo|rpgmvm)$/i)) {
                                 //Make sure that the difference in bytes between new and old isn't just
                                 //  due to encryption differences
-                                if (this.unencryptBytesEqual(orig_bytes, patch_bytes, orig_key, mod_key, file)) {
+                                if (!this.unencryptBytesEqual(orig_bytes, patch_bytes, orig_key, mod_key, file)) {
                                     //Copy new image/audio/asset into
                                     const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
                                     //Make sure requisite parent directory hierarchy exists
                                     //  that the file will be written into
 
+                                    AutoDiffLogger.reportFound(orig, patch);
                                     this.taskList.push([OVERWRITE, orig, patch, newfile])
-                                    /*
-                                    this.createReqDirectories(newfile);
-                                    fs.writeFileSync(newfile, patch_bytes);
-                                    AutoDiffLogger.reportOverwrite(orig, newfile);
-                                    */
+
                                 }
                             //If script flag is checked, we can copy in new/changed assets;
                             //  files with extensions that are not common are copied regardless, to be safe
@@ -4430,14 +4157,9 @@ AutoDiff.createPatch = function(config, name) {
                                 //Make sure requisite parent directory hierarchy exists
                                 //  that the file will be written into
 
+                                AutoDiffLogger.reportFound(orig, patch);
                                 this.taskList.push([TEXTDIFF, orig, patch, newfile])
-                                /*
-                                this.createReqDirectories(newfile);
-                                AutoDiffLogger.reportStart(orig, patch, newfile);
-                                let diff = this.textDiff(orig, patch);
-                                fs.writeFileSync(newfile, JSON.stringify(diff), {encoding: 'utf8'});
-                                AutoDiffLogger.reportSuccess(orig, patch, newfile);
-                                */
+  
                             }
 
                         //File bytes match in both modded and base directory:
@@ -4449,19 +4171,17 @@ AutoDiff.createPatch = function(config, name) {
                     } else {
                           //If asset compare flag is checked, we can copy in new/changed assets;
                           //  files with extensions that are not common are copied regardless, to be safe
-                          if (!file.match(/\.(png|mp4|m4a|ogg|rpgmvp|rpgmvo|rpgmvm)$/i) || assetCompare) {
+                          if ((!file.match(/\.(png|mp4|m4a|ogg|rpgmvp|rpgmvo|rpgmvm)$/i) || assetCompare) &&
+                              (!file.match(/\.js$/i) || scriptCompare) ) {
                             //Copy it into the patch, it's new content
                             const patch = path.join(curr, file);
                             const newfile = path.join(ModManager._path, ModManager._patchesFolder, name, parentPath, file);
                             //Make sure requisite parent directory hierarchy exists
                             //  that the file will be written into
 
+                            AutoDiffLogger.reportFoundNew(patch);
                             this.taskList.push([OVERWRITE, "", patch, newfile])
-                            /*
-                            this.createReqDirectories(newfile);
-                            fs.writeFileSync(newfile, this.readProperVersion(patch, {encoding: 'utf8'}));
-                            AutoDiffLogger.reportOverwrite(patch, newfile);
-                            */
+
                           }
                     }
             }
@@ -4479,6 +4199,16 @@ AutoDiff.createPatch = function(config, name) {
 Array.prototype.equals = function (arr) {
     return this.length == arr.length && this.every((u, i) => u === arr[i]);
 }
+
+//TODO/TO-TEST:
+//  Fix Save Convert menu and various relative pathing for patch-specific assets
+//  Um... so to read into the encryption key map, converts all .exts to unencrypted. Use a bit of brainpower
+//    to determine if this causes a problem/how to tell if an image needs to be decrypted... ie, I know practically
+//    speaking it's a weird case, but suppose the base game has Actor1.png unencrypted, and the patch provides
+//    a new, encrypted image. So, does the game go based on its data and try to load with an unencrypted name? May
+//    have already addressed in other functions, but double-check
+//  Test plugins. Does the "just load everything and try to delete to reclaim space" solution... work?
+//  Test list diffing
 
 //TODO - save convert: thankfully self-switches are indexed by event ids, which shouldn't be changed easily,
 //   so this is the best heuristic we could hope for.
@@ -4498,6 +4228,10 @@ Array.prototype.equals = function (arr) {
 //  TODO - add object method define weeding
 //  TODO - look at how MadeWithMv dodges my filter, see if it makes sense to do anything about that
 
+//TODO - since it changed from "read from src, write to temp", we can now add more conditions (oh boy) that first
+//  check if the temp version of the file exists (to see if we're apply a 2nd, 3rd, etc patch). And if we aren't, then
+//  instead of copying a json diff as "the patched file" we can alert about an error applying the diff, and abort
+
 //TODO - Another weakness was discovered in the "modded script sanitization" approach: if a core ("rpg_") script
 //  (not a plugin) is modified in the plugin, then any function in it that has ALREADY been modified by a
 //  vanilla plugin won't match, even if it actually isn't changed when compared to the corresponding function
@@ -4507,22 +4241,6 @@ Array.prototype.equals = function (arr) {
 // TODO - in the attempted fix, the problem is that we're comparing indices into the STRING that represents
 //   the file, against an index into the array that comes from .split(\n)'ing that string. Different units,
 //   that aren't easy to convert between
-
-//Save convert TODOs: so I had to get rid of "ImageManager.clear()" to get more of the save files
-// to have characters drawn... so I need a way of either forcing it to not shortcut to a bitmap
-// when we feed it an image name (aka cache) since the whole point is different saves in different
-// patches have different ideas of what an image looks like... or, have the initial names somehow
-// be different so they are cached in different places (but, this is hard because you have to go
-// a few functions into the call stack before it adds "img/characters/" to the filename, so
-// the patch install path has to be added late...). Also currently: it seems to only care about the
-// patch/version of the currently-top-row/showing save file in the list - they all get drawn or
-// are invisible based on that. Why? Also - why are they invisible at all...? Happened less when I
-// got rid of ImageManager.clear() - but not completely, the bottom two when I first enter the menu
-// still don't have a party drawn. Answer: they were invisible because the bitmaps were loaded asynchronously,
-// and didn't load in time for the "draw" or refresh call. Hence why another draw/refresh call on that
-// image/bitmap would actually cause it to appear.
-// potential idea: put a check into "drawCharacter" that injects the url with the patch if the window
-// is a savefilelist type... eh, might not help at all...
 
 //TODO: Once again, supporting the ability to apply multiple patches causes a problem that I did
 // not initially realize: suppose we have a file that does not exist in the original and is added
@@ -4547,12 +4265,6 @@ Array.prototype.equals = function (arr) {
 //   - implemented, concept has been tested in practice, but final implementation needs test
 
 //TODO: main.js decrypter script currently changes file size when it decrypts, need to fix
-//TODO: test menu for transitioning save files across patches
-//TODO: right now, in theory, a "patched instance" can include multiple mods/patches.
-//  In reality, this won't work currently because the mods/patches will have different
-//  decrypt keys for their images, and likely the latest one added will override all
-//  others. Furthermore, if base game is encrypted but modder leaves his images unencrypted
-//  (mixed bag of encryption) that will also fail, currently, I think
 //TODO: make sure that when loading a save, it loads database info from the correct patch...
 //  but it's loading it from a save, and the save will have been made based on patch info, so no need to worry
 //  about potential patch-hopping...? Wait, no that's what this bullet is about - make sure that the things NOT
@@ -4565,10 +4277,4 @@ Array.prototype.equals = function (arr) {
 //  to set a flag in ModManager when the scripts are loaded/added and deactivate scripts in the mod window if that
 //  flag is set.
 //TODO: diff-creating tool - test with explicit list option
-//TODO: ideally? add progress bar to patch-apply, patch init, and patch export.
 //TODO: fix cursor thing when MOG is used
-//Apparently " * @type file" is a thing, account for this in scripts?
-// * @dir audio/se/
-// * @require 1"
-// "
-// Also so is this:  * @type common_event
