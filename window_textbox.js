@@ -104,7 +104,7 @@ Window_Base.prototype.drawWrapTextOffset = function(text, y, indent, align, size
   this.contents.clear();
 
   let lines = text.split(/[\r\n]+/);
-  for (var k in lines) {
+  for (let k = 0; k < lines.length; k++) {
     const line = lines[k];
     y = this.drawWrapLine(line, indent, y, align, size);
   }
@@ -135,7 +135,8 @@ Window_Checkbox.prototype.initialize = function(x, y, side, specs) {
     this._boxSize = specs['size'] || side * 0.9; //if no image, side length of interior box/fill
     this._color = specs['color'] || '#ffffff';
     this._fontColor = specs['font_color'] || '#ffffff';
-    this._disableColor = specs['disable_color'] || '#ffffff';
+    this._disableColor = specs['disable_color'] || '#cccccc';
+    this._disableFontColor = specs['disable_font_color'] || '#cccccc';
     Window_Base.prototype.initialize.call(this, x, y, side, side);
     //this._createCursorSprite(); - called in createTextSprite
     this._createFillSprite();
@@ -160,11 +161,30 @@ Window_Checkbox.prototype._createFillSprite = function() {
     this.addChild(this._fill);
 }
 
+Window_Checkbox.prototype.redrawBox = function() {
+    let drawColor = (this.active) ? this._color : this._disableColor;
+    if (this._image == null) {
+        this._fill.bitmap.fillRect((this.width - this._boxSize)/2, (this.height - this._boxSize)/2, this._boxSize, this._boxSize, drawColor);
+    }
+}
+
 Window_Checkbox.prototype.setColor = function(color) {
     this._color = color;
-    if (this._image == null) {
-        this._fill.bitmap.fillRect((this.width - this._boxSize)/2, (this.height - this._boxSize)/2, this._boxSize, this._boxSize, this._color);
-    }
+    this.redrawBox();
+}
+
+Window_Checkbox.prototype.setDisableColor = function(color) {
+    this._disableColor = color;
+    this.redrawBox();
+}
+
+Window_Checkbox.prototype.setFontColor = function(color) {
+    this._fontColor = color;
+    this._drawText();
+}
+Window_Checkbox.prototype.setDisableFontColor = function(color) {
+    this._disableFontColor = color;
+    this._drawText();
 }
 
 Window_Checkbox.prototype.isTouchedInsideFrame = function() {
@@ -199,8 +219,8 @@ Window_Checkbox.prototype._createTextSprite = function() {
             this.createCursorRect(-this.margins,this.text.y - this.margins,this.width + w + 2*this.margins, gr_height+2*this.margins);
             break;
         }
+        this.text.bitmap.textColor = (this.active) ? this._fontColor : this._disableFontColor;
         this.text.bitmap.drawText(0,0,this.text.bitmap.width, this.text.bitmap.height);
-        this.text.bitmap.textColor = this._fontColor;
         this.text.visible = false;
         this.addChild(this.text);
     } else {
@@ -234,6 +254,8 @@ Window_Checkbox.prototype._drawText = function() {
   if (this._text == "" || !this.text) {
     return;
   }
+  this.text.bitmap.clear();
+  this.text.bitmap.textColor = (this.active) ? this._fontColor : this._disableFontColor;
   this.text.bitmap.drawText(this._text, 0, 0, this.text.bitmap.width, 36);
   this.text.visible = true;
 }
@@ -335,15 +357,12 @@ Window_CommandList.prototype.makeCommandList = function(list) {
       this._itemlist = list;
       this.refresh();
     } else {
-      for (var i in this._itemlist) {
+      for (let i = 0; i < this._itemlist.length; i++) {
           this.addCommand(this._itemlist[i], this._itemlist[i]);
       }
     }
 }
 
-//Window_CommandList.prototype.windowWidth = function() {
-//    return 240;
-//};
 
 //-----------------------------------------------------------------------------
 // Window_MultiPick
@@ -405,7 +424,7 @@ Window_MultiPick.prototype.processOk = function() {
 
 Window_MultiPick.prototype.getSelected = function() {
     var results = [];
-    for (var i in this._selected) {
+    for (var i; i < this._selected.length; i++) {
         if (this._selected[i]) {
             results.push(this._list[i]);
         }
@@ -432,8 +451,8 @@ Window_Dropdown.prototype.initialize = function(options, x, y, opts) {
     if (opts['width']) {this._maxWidth = opts['width'];}
     else this._maxWidth = Window_Command.prototype.windowWidth.call(this);
     this._options = new Window_CommandList(options, x, y, {'width':this._maxWidth});
-    for (var i in options) {
-        var option = options[i];
+    for (let i = 0; i < options.length; i++) {
+        let option = options[i];
         this._options.setHandler(option, this.chooseUnfocus.bind(this));
     };
     Window_CommandList.prototype.initialize.call(this,[], x, y, {'width':this._maxWidth});
@@ -482,7 +501,7 @@ Window_Dropdown.prototype.setCommandList = function(list, index, align) {
   this._options.hide();
   this.addChild(this._options);
   this.alignOptions(align);
-  for (var i in list) {
+  for (var i = 0; i < list.length; i++) {
       var option = list[i];
       this._options.setHandler(option, this.chooseUnfocus.bind(this));
   };
@@ -542,12 +561,12 @@ Window_Dropdown.prototype.drawNone = function() {
 
 Window_Dropdown.prototype.makeCommandList = function() {
     if (!this._handlers) { //first time
-        var options = this._options._list;
-        var max = "";
+        let options = this._options._list;
+        let max = "";
         //currently this does not do anything; this was partial code towards
         //making it defualt to a width that accomodates the largest command
-        for (var i in options) {
-            var option = options[i];
+        for (let i = 0; i < options.length; i++) {
+            let option = options[i];
             if (this._options.textWidth(option) > this._options.textWidth(max)) {
                 if (this._maxWidth && this._options.textWidth(option) <= this._maxWidth) {
                     max = option;
@@ -1278,8 +1297,8 @@ Keyboard.initialize = function() {
 Keyboard.initialize();
 
 Keyboard.sendMessage = function() {
-  for (var i in this.text_boxes) {
-    var box = this.text_boxes[i];
+  for (let i = 0; i < this.text_boxes.length; i++) {
+    let box = this.text_boxes[i];
     if (box.active) {
       box.validEntryCheck()
       if (box.validState) {
@@ -1305,7 +1324,7 @@ Keyboard.connectTextbox = function(tb) {
 Keyboard.update = function() {
   //if any text box is active, keyboard is active
   var change = false;
-  for (var box in this.text_boxes) {
+  for (let box = 0; box < this.text_boxes.length; box++) {
     if (this.text_boxes[box].active) {
       change = true;
       break;
@@ -1321,14 +1340,14 @@ Keyboard.update = function() {
   }
 };
 Keyboard.window = function() {
-  for (var i in this.text_boxes) {
+  for (let i = 0; i < this.text_boxes.length; i++) {
     if (this.text_boxes[i].active) return this.text_boxes[i];
   }
   return null;
 }
 
 Keyboard.refreshTextboxes = function() {
-    for (var box in this.text_boxes) {
+    for (let box = 0; box < this.text_boxes.length; box++) {
       this.text_boxes[box].refresh();
     }
 };
@@ -1465,8 +1484,10 @@ KeyInput._keyMap = {
 KeyInput._inputMap = Object.assign({}, Input.keyMapper);
 
 KeyInput.invertMap = function() {
-  var map = {};
-  for (key in this._keyMap) {
+  let map = {};
+  let keys = Object.keys(this._keyMap);
+  for (let i = 0; i < keys.length; i++) {
+    let key = keys[i];
     map[this._keyMap[key]] = key;
   }
   return map;
@@ -1491,14 +1512,15 @@ Input.isShiftPressed = function() {
     );
 }
 //this change to Input is where a lot of the code that makes "keyboard" work actually lies
-var feed_keypresses_into_keyboard = Input.update;
+let feed_keypresses_into_keyboard = Input.update;
 Input.update = function() {
   feed_keypresses_into_keyboard.call(this);
   Keyboard.update();
   if (Keyboard.active) {
     this.keyboard_lock = true;
-    for (var id in this.keyMapper) {//KeyInput._keyMap) {
-      var key = this.keyMapper[id];//KeyInput._keyMap[key];
+    let keys = Object.keys(this.keyMapper);
+    for (let i = 0; i < keys.length; i++) {//KeyInput._keyMap) {
+      let key = this.keyMapper[keys[i]];//KeyInput._keyMap[key];
       if ((this.isTriggered(key) || this.isRepeated(key)) && (["Shift", "Left Shift", "Right Shift"].indexOf(key) < 0)) {
         if (/NumberPad /.exec(key)) {
           continue; //collision with NumberPad and arrows, apparently not
@@ -1509,7 +1531,7 @@ Input.update = function() {
           continue;
         }
         if (key.length == 1) {
-          var letter;
+          let letter;
           if (this.isPressed("Ctrl") || this.isRepeated("Ctrl")|| this.isPressed("Left Ctrl") || this.isRepeated("Left Ctrl")|| this.isPressed("Right Ctrl") || this.isRepeated("Right Ctrl")) {
             //if (this.isTriggered('c')) {
               //Keyboard.copy();
@@ -1581,7 +1603,7 @@ Input.update = function() {
             case "Space":
               Keyboard.tryTypeLetter(" "); break;
             case "Tab":
-              for (var i in Array(4))
+              for (let i  = 0; i < 4; i++)
                 Keyboard.tryTypeLetter(" ");
               break;
             case "Enter":
@@ -1673,13 +1695,13 @@ Input.buttonMapInput = function(method, keyname) {
         case 'debug': check = ['F9']; break;
         default: break;
     }
-    for (var i = 0; i < check.length; i++) {
+    for (let i = 0; i < check.length; i++) {
         result = result || method.call(this, check[i]);
     }
     return result;
 }
 
-var eat_press = Input.isPressed;
+let eat_press = Input.isPressed;
 Input.isPressed = function(key) {
   //If the scene has no active keyboard, proceed as the base game expects.
   if (!Keyboard.active) {
@@ -1702,7 +1724,7 @@ Input.isPressed = function(key) {
 
 };
 
-var eat_trigger = Input.isTriggered;
+let eat_trigger = Input.isTriggered;
 Input.isTriggered = function(key) {
   //Never override or lock out mouse input; we will always accept/register that
   if (key == KeyInput._keyMap['Mouse Left'] || ((Array.isArray(key)) && (key.indexOf(KeyInput._keyMap['Mouse Left']) >= 0))) {
@@ -1729,7 +1751,7 @@ Input.isTriggered = function(key) {
   }
 };
 
-var eat_repeat = Input.isRepeated;
+let eat_repeat = Input.isRepeated;
 Input.isRepeated = function(key) {
   //If the scene has no active keyboard, proceed as the base game expects.
   if (!Keyboard.active) { 
