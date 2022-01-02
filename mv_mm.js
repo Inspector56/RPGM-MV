@@ -634,6 +634,7 @@ ModManager._applyPatch = function(name) {
                         AutoDiff.createReqDirectories(targetFile);
                         if (patchFile.match(/\.js$/i)) {
                             var fileText = fs.readFileSync(patchFile, {encoding: 'utf8'});
+                            /* In theory, this var pass safety measure should be redundant */
                             fileText = this.textVarPass(fileText);
                             fileText = this.applyFunctionSafeties(fileText);
                             fs.writeFileSync(targetFile, fileText, {encoding: 'utf8'});
@@ -685,6 +686,7 @@ ModManager.patchText = function(targetFile, sourceFile, patchFile) {
      * applyFunctionSafeties function definition to better
      * understand why this is here. */
     if (sourceFile.match(/\.js$/i)) {
+        /* In theory, this var pass protection is redundant */
         fileText = this.textVarPass(fileText);
         fileText = this.applyFunctionSafeties(fileText);
     }
@@ -2449,6 +2451,15 @@ Window_ModPatchConfig.prototype.apply = function() {
     //  it's not a lot of overhead anyway
     ModManager.set(patch);
 
+    //We officially have at least one patch, so make sure to scrub "let/const"
+    //declarations so that it's safer to use modded scripts
+    //Since diffs are created based on "cleaned" versions of the project,
+    //for indices to line up, we must clean before applying diffs.
+    if (!ModManager._hasVarReplaced) {
+        ModManager._hasVarReplaced = true;
+        ModManager.projectVarPass();
+    }
+
     ModManager._applyPatch(patch);
 
     this._history.push("PATCH: "+patch+"\n");
@@ -2465,22 +2476,11 @@ Window_ModPatchConfig.prototype.doExportFinal = function() {
   }
   const patchName = this._inputText.message;
   const dest = path.join(ModManager._path, ModManager._installsFolder, patchName);
-  //We officially have at least one patch, so make sure to scrub "let/const"
-  //declarations so that it's safer to use modded scripts
-  if (!ModManager._hasVarReplaced) {
-    ModManager._hasVarReplaced = true;
-    ModManager.projectVarPass();
-  }
 
   //save contents of curr to new patch. Also clears temp.
   ModManager.savePatch(patchName);
   //save the encryption list for any new assets
   ModManager.dumpEncryptionList(dest);
-
-  if (!ModManager._hasVarReplaced) {
-    //No reason to do this scan-and-replace twice in one sitting
-    ModManager._hasVarReplaced = true;
-  }
 
   //log history and clear:
   const patchTxt = path.join(dest, 'patch.txt');
