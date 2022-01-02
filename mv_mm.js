@@ -21,18 +21,20 @@
  *       b) Make sure that it is set up so that the folder hierarchy goes:
  *        .../mods/patches/[patchName]/{data/, img/, audio/, etc} 
  *   5) Launch the game, navigate down to the "Mods" option, and select it.
- *   6) Select "Patches".
- *   7) Navigate the patch list on the left to find your desired patch.
- *   8) Select whichever patch tags you want.
- *   9) Select the apply button to apply the patch. NOTE: The patch is not yet playable.
- *   10) Repeat steps 6-8 for all desired patches, in the desired order. NOTE: It is not
+ *   6) *Perform one-time "let/const" scrub on game, if you have never done so before,
+ *    by selecting "Yes" when prompted.
+ *   7) Select "Patches".
+ *   8) Navigate the patch list on the left to find your desired patch.
+ *   9) Select whichever patch tags you want.
+ *   10) Select the apply button to apply the patch. NOTE: The patch is not yet playable.
+ *   11) Repeat steps 6-8 for all desired patches, in the desired order. NOTE: It is not
  *    recommended to try to apply multiple patches in one installation, as there is a good
  *    chance the patches will have some conflict. But the possibility is supported.
- *   11) OPTIONAL: if you make a mistake or change your mind, use the Reset button to clear
+ *   12) OPTIONAL: if you make a mistake or change your mind, use the Reset button to clear
  *    the your patch-in-progress and start from a blank slate.
- *   12) Select Export when you are ready to finish the patch. This may take a few minutes.
- *   13) Name your patch, and hit Enter.
- *   14) Continue pressing escape to exit to the Title menu. Press New Game, and select
+ *   13) Select Export when you are ready to finish the patch. This may take a few minutes.
+ *   14) Name your patch, and hit Enter.
+ *   15) Continue pressing escape to exit to the Title menu. Press New Game, and select
  *    your named patch from the options. Alternatively, if you already have save games,
  *    you can use the Save Convert menu in the Mods page to convert the saves to the new
  *    patch (see guide below).
@@ -41,23 +43,23 @@
  *
  * HOW TO CONVERT SAVES
  * ----------------------------------------
- *   15) To convert a save between patches, or to/from the vanilla game to a given
+ *   16) To convert a save between patches, or to/from the vanilla game to a given
  *    patch, you must:
  *       a) have at least one existing save.
  *       b) have at least one installed patch (see above for how to do this).
- *   16) Go to the game's Title menu.
- *   17) Navigate to the "Mods" option.
- *   18) In the Mods page, navigate to the Save Convert tab.
- *   19) In the list on the left, scroll through until you find the savegame that
+ *   17) Go to the game's Title menu.
+ *   18) Navigate to the "Mods" option.
+ *   19) In the Mods page, navigate to the Save Convert tab.
+ *   20) In the list on the left, scroll through until you find the savegame that
  *    you want to convert. Hit enter to select it.
- *   20) The menu will focus to the list on the right; scroll through the list
+ *   21) The menu will focus to the list on the right; scroll through the list
  *    and hit Enter to select the patch installation you want to convert the save
  *    to.
- *   21) The menu will focus back to the left list; THE SAVE HAS NOT BEEN CONVERTED
+ *   22) The menu will focus back to the left list; THE SAVE HAS NOT BEEN CONVERTED
  *    YET. Scroll through the save list to select the slot to save the converted
  *    version of the save to. If there is an existing save in that slot, it will
  *    prompt you to confirm that you want to overwrite that save file.
- *   22) Hit enter again, and the save conversion should apply quickly. If it worked,
+ *   23) Hit enter again, and the save conversion should apply quickly. If it worked,
  *    the selected slot on the left list should look different (either have data where
  *    before it was empty, or the patchname listed on it will look different).
  *
@@ -74,8 +76,10 @@
  *   5) Modify the game (under "www", not "mods/base") as you like. (There is a 
  *    separate guide for this step below)
  *   6) Start the game, and from the Title menu navigate to the Mods option.
- *   7) Within the Mods menu, navigate to the "Create" tab on the far right.
- *   8) In this menu, you will see a textbox, three toggles beneath it, and a button
+ *   7) *Perform one-time "let/const" scrub on game, if you have never done so before,
+ *    by selecting "Yes" when prompted.
+ *   8) Within the Mods menu, navigate to the "Create" tab on the far right.
+ *   9) In this menu, you will see a textbox, three toggles beneath it, and a button
  *    to begin exporting.
  *      a) The textbox is where you provide the name of the patch; it determines
  *        the name of the folder in which the patch will be generated. 
@@ -101,7 +105,7 @@
  *      d) The third toggle, if turned on, means that you want it to scan .js files
  *        (scripts and plugins). By default, the patch only looks at data files (map
  *        data, database info like party members and enemies, etc).
- *   9) When you are ready to export, enter a valid folder name in the textbox and,
+ *   10) When you are ready to export, enter a valid folder name in the textbox and,
  *    still from the textbox, press Enter to be taken to the submit button. Press
  *    enter again to confirm and begin exporting the patch. Note that it may take
  *    a while to export. You will know it is finished when it automatically leaves
@@ -110,8 +114,8 @@
  *    RPG Maker MV processes if they take too many resources for a long task), try again
  *    with the same patch name - it should resume diffing from where it left off. There
  *    is no danger of "corrupted files" from an early abort.
- *   10) OPTIONAL: create a .js file that helps convert savegames. See section below.
- *   11) Your patch is ready under "mods/patches/{yourPatchName}/". Copy it somewhere, zip
+ *   11) OPTIONAL: create a .js file that helps convert savegames. See section below.
+ *   12) Your patch is ready under "mods/patches/{yourPatchName}/". Copy it somewhere, zip
  *    it, and post at your leasure.
  *   
  *
@@ -193,6 +197,16 @@
  *    modded core file in as part of the modded instance, but in reality most functions in that
  *    file have not been modified. Those functions get reset when this core file is loaded again,
  *    overwriting any changes enacted by the plugins.
+ *    This is less of a problem if you KNOW that any such core file modifications: will not change
+ *    behavior affected by any plugin, or are in turn modified by additional modifications to the
+ *    original game's plugin files. However, note that the mod manager does its best, when applying
+ *    a patch, to scrub unchanged/redundant code from modified plugin files, doing its best to only
+ *    keep modified functions.
+ *   4.5) In fact, while much effort has gone into trying to make the use of modified scripts/plugins
+ *    work smoothly, the best thing you can do to ensure that things work well, is to avoid, whenever
+ *    possible (which should be always, although it may be less convenient) actually modifying scripts.
+ *    It is always better to make a new plugin instead. If you would modify a plugin, just put the new
+ *    plugin after the plugin you were going to modify in the load order.
  *
  *
  * =============================================================================
@@ -279,10 +293,10 @@ ModManager._patchesFolder       = "patches";
 ModManager._convertFilename     = "convert.js";
 ModManager._gameLoaded          = false;
 ModManager._scripts             = []; //Remembers patch-specific js sources we've
-ModManager._awaiting            = {};
-ModManager._callbacks           = {};
+ModManager._pluginsLoaded       = {}; //Remembers which patches we've already loaded the requisite sources for
 ModManager._encryptionList      = {}; //Builds a map of modded assets to the proper encryption key to use
 ModManager._encryptionListFile  = 'decryptMap.xx' //arbitrary file extension
+ModManager._varReplaceReceipt   = 'check.done'
 ModManager._checkAssetHeaders   = true;
 
 ModManager.set = function(patchname) {
@@ -495,6 +509,7 @@ ModManager.pluginSetup = function(plugins) {
 
 ModManager.loadPlugins = function(prevVer) {
     if (prevVer == DataManager._version) return;
+    if (this._pluginsLoaded[DataManager._version]) return;
 
     let newScripts = path.join(this._path, this._installsFolder, DataManager._version, "js");
     if (DataManager._version && DataManager._version != "") {
@@ -536,6 +551,8 @@ ModManager.loadPlugins = function(prevVer) {
 
         this.pluginSetup(plugs);
     }
+
+    this._pluginsLoaded[DataManager._version] = true;
 }
 
 ModManager._applyPatch = function(name) {
@@ -663,6 +680,7 @@ ModManager.patchText = function(targetFile, sourceFile, patchFile) {
      * applyFunctionSafeties function definition to better
      * understand why this is here. */
     if (sourceFile.match(/\.js$/i)) {
+        fileText = this.fileVarPass(fileText);
         fileText = this.applyFunctionSafeties(fileText);
     }
     //Overwrite file with patched contents
@@ -693,6 +711,129 @@ ModManager.finalScriptPass = function(installName) {
     }.bind(self);
     //Perform diff from roots
     jsReplaceRecurse(path.join(this._path, this._tempFolder));
+}
+
+//Replaces top-level instances of "let" and "const" declarations
+//  with "var"
+ModManager.fileVarPass = function(fileText) {
+    const maxLen = fileText.length;
+    let openParenCount = 0;
+    let toReplace = ["let", "const"];
+    let replaceWith = "var";
+
+    let i = 0;
+
+    function isValidVarnameChar(char) {
+        if (char >= '0' && char <= '9') {
+            return true;
+        } else if (char >= 'a' && char <= 'z') {
+            return true;
+        } else if (char >= 'A' && char <= 'Z') {
+            return true;
+        } else if (char == '_' || char == '$') {
+            return true;
+        }
+        return false;
+    }
+
+    function checkForWord(index, word) {
+        /* Have to check that the bad keyword is a keyword and not a substring
+         * of a variable/function name. May catch a commented word, but it's not
+         * worth coding it to avoid those. */
+        /* EXCEPTION: very first spot in the file - index == 0 */
+
+        let k = 0;
+        if (index > 0) {
+            if (isValidVarnameChar(fileText[index])) {
+                return false;
+            }
+            index++;
+        }
+        while (k < word.length) {
+            /* If we ran into the end before finishing the word */
+            if (index+k >= maxLen) {
+                return false;
+            }
+            if (fileText[index+k] != word[k]) {
+                return false;
+            }
+            k++;
+        }
+        /* We don't have to check if the match is snug with the end of the file (== case),
+         * because that would be a syntax error, if the file ended with a declaration
+         * keyword. */
+        if (maxLen > index+k) {
+            if (isValidVarnameChar(fileText[index+k])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function replaceWords() {
+        for (let k = 0; k < toReplace.length; k++) {
+            let word = toReplace[k];
+            if (checkForWord(i, word)) {
+                let space = (i == 0) ? 0 : 1;
+                /* Due to how we try to match - 'space' represents whether we are matching from the start
+                 * of the file, or if we are matching from a "sandwich" of characters around the word we're
+                 * trying to replace */
+                fileText = fileText.slice(0, i+space) + replaceWith + fileText.slice(i+space+word.length);
+                return;
+            }
+        }
+    }
+
+    //We only care about the top (global) level
+    for (i = 1; i < fileText.length; i++) {
+        if (fileText[i] == '(' || fileText[i] == '{') {
+            openParenCount += 1;
+        } else if (fileText[i] == ')' || fileText[i] == '}') {
+            openParenCount -= 1;
+        }
+        if (openParenCount == 0) {
+            replaceWords();
+        }
+    }
+
+    return fileText;
+}
+
+//The reason for this is that we will probably be adding modified versions of plugins,
+//  but the modified version will still possibly have some declarations in common with
+//  the original. So when a patch is loaded, if the declaration used "const" or "let",
+//  the game will detect a "redeclaration" and crash. Not so if we convert these
+//  declarations to var, then it will allow it.
+ModManager.projectVarPass = function() {
+    let self = this;
+    let varReplaceRecurse = function(parentPath="") {
+        var files = [];
+        //path to base files/temp directory
+
+        if (fs.existsSync(parentPath)) {
+            files = fs.readdirSync(parentPath);
+            files.forEach(function(file, index) {
+                if (fs.existsSync(path.join(parentPath, file)) && fs.lstatSync(path.join(parentPath, file)).isDirectory()) {
+                    varReplaceRecurse(path.join(parentPath, file));
+                } else {
+                    if (file.match(/\.js$/i)) {
+                        fileText = fs.readFileSync(path.join(parentPath, file), {encoding: 'utf8'});
+                        fileText = this.fileVarPass(fileText);
+                        fs.writeFileSync(path.join(parentPath, file), fileText, {encoding: 'utf8'});
+                    }
+                }
+            }.bind(this));
+        }
+    }.bind(self);
+
+    //Perform diff on this project
+    varReplaceRecurse(path.dirname(process.mainModule.filename));
+
+    //Before we create a diff/patch, convert global let and const symbols in the base repository,
+    //  as in practice the patch will also be applied onto a var-converted version of the game.
+    if (fs.existsSync(this._base)) {
+        varReplaceRecurse(this._base);
+    }
 }
 
 ModManager.appendContents = function(tempFile, sourceFile, newFile) {
@@ -927,7 +1068,8 @@ ModManager.applyFunctionSafeties = function(file, patchname) {
     function wrapScriptBody(topline, bodyText, hasElse, funName, args) {
         const aliasName = "MVM_script_alias_"+funName.replace(/\./g, '_');
         let preface = "";
-        let if_add = "if (DataManager._version == <replaceText>) {";
+        /* Split up so that this section does not become a target of the regex replace later, just in case */
+        let if_add = "if (DataManager._version" + " == " + "<replaceText>) {";
         let if_close = "}";
         if (hasElse) {
             preface = "let "+aliasName+" = "+funName+";";
@@ -1493,7 +1635,7 @@ DataManager.checkEncryptList = function(url) {
 
 //Global save info defs knows which save is on which mod/patch
 // so we can show this during save file list screens
-const DMsaveGameWPath = DataManager.saveGameWithoutRescue;
+var DMsaveGameWPath = DataManager.saveGameWithoutRescue;
 DataManager.saveGameWithoutRescue = function(savefileId) {
     let val = DMsaveGameWPath.call(this, savefileId);
     let globalInfo = this.loadGlobalInfo();
@@ -1502,7 +1644,7 @@ DataManager.saveGameWithoutRescue = function(savefileId) {
     return val;
 }
 
-const mv_mm_reset_load_latches = DataManager.loadDatabase;
+var mv_mm_reset_load_latches = DataManager.loadDatabase;
 DataManager.loadDatabase = function(...args) {
     MVMM_resetLatches();
     mv_mm_reset_load_latches.call(this, ...args);
@@ -1510,7 +1652,7 @@ DataManager.loadDatabase = function(...args) {
 
 //-----------------------------------------------------------------------------
 
-const DMcheckImageIgnoreIfNoEncrypt = Decrypter.checkImgIgnore;
+var DMcheckImageIgnoreIfNoEncrypt = Decrypter.checkImgIgnore;
 Decrypter.checkImgIgnore = function(url){
     if (!DataManager._version || DataManager._version == "") {
         return DMcheckImageIgnoreIfNoEncrypt.call(this, url);
@@ -1559,7 +1701,7 @@ Decrypter.getEncryptionKey = function(url, ver = DataManager._version) {
  * I could find no alternative but to overwrite these Decrypt functions.
  */
 
-const _xml_open_diverted_path = XMLHttpRequest.prototype.open;
+var _xml_open_diverted_path = XMLHttpRequest.prototype.open;
 XMLHttpRequest.prototype.open = function(method, url) {
     if (DataManager._version && DataManager._version != "") {
         DataManager.loadEncryptionList();
@@ -1580,7 +1722,7 @@ XMLHttpRequest.prototype.open = function(method, url) {
 /* Intercept it here so that the cache will differentiate images from different
    installs... which only comes up for save lists, but doesn't hurt */
 
-const _load_normal_bitmap_diverted_path = ImageManager.loadNormalBitmap;
+var _load_normal_bitmap_diverted_path = ImageManager.loadNormalBitmap;
 ImageManager.loadNormalBitmap = function(url, hue) {
     if (DataManager._version && DataManager._version != "") {
         DataManager.loadEncryptionList();
@@ -1595,7 +1737,7 @@ ImageManager.loadNormalBitmap = function(url, hue) {
     return _load_normal_bitmap_diverted_path.call(this, url, hue);
 }
 
-const _reserve_normal_bitmap_diverted_path = ImageManager.reserveNormalBitmap;
+var _reserve_normal_bitmap_diverted_path = ImageManager.reserveNormalBitmap;
 ImageManager.reserveNormalBitmap = function(url, hue, reservationId){
     if (DataManager._version && DataManager._version != "") {
         DataManager.loadEncryptionList();
@@ -1750,7 +1892,7 @@ Decrypter.decryptArrayBuffer = function(arrayBuffer, url=null, version="") {
     return arrayBuffer;
 };
 
-const _data_manage_reserve_save_images_with_reroute = DataManager.loadSavefileImages;
+var _data_manage_reserve_save_images_with_reroute = DataManager.loadSavefileImages;
 DataManager.loadSavefileImages = function(info) {
 
     DataManager._backupVersion = DataManager._version;
@@ -1761,7 +1903,7 @@ DataManager.loadSavefileImages = function(info) {
 
 };
 
-const _image_manage_draw_party_with_reroute = Window_SavefileList.prototype.drawPartyCharacters;
+var _image_manage_draw_party_with_reroute = Window_SavefileList.prototype.drawPartyCharacters;
 Window_SavefileList.prototype.drawPartyCharacters = function(info, x, y) {
 
     DataManager._backupVersion = DataManager._version;
@@ -1822,7 +1964,7 @@ DataManager.extractSaveContents = function(contents) {
     this.loadEncryptionList();
 }
 
-let plugin_manager_setup_dont_duplicate = PluginManager.setup;
+var plugin_manager_setup_dont_duplicate = PluginManager.setup;
 PluginManager.setup = function(plugins) {
     if (DataManager._version && DataManager._version != "") {
         plugins.forEach(function(plugin) {
@@ -1837,7 +1979,7 @@ PluginManager.setup = function(plugins) {
     }
 };
 
-let quick_load_increment_lock = DataManager.loadDataFile;
+var quick_load_increment_lock = DataManager.loadDataFile;
 DataManager.loadDataFile = function(name, src) {
     if (ModManager.quickLoad) {
         const backup = JSON.parse(JSON.stringify(window[name]));
@@ -1853,7 +1995,7 @@ DataManager.loadDataFile = function(name, src) {
     
 }
 
-let quick_load_fake_database = DataManager.onLoad;
+var quick_load_fake_database = DataManager.onLoad;
 DataManager.onLoad = function(object) {
     if (ModManager.quickLoad) {
         ModManager._loadLock -= 1;
@@ -1879,7 +2021,7 @@ DataManager.onLoad = function(object) {
 
 /* THIS IS ONLY HERE BECAUSE SOME OTHER PLUGINS NEED HELP UNDERSTANDING
  * THAT WE ARE RELOADING THE DATABASE */
-const quick_load_check_db_loaded = DataManager.isDatabaseLoaded;
+var quick_load_check_db_loaded = DataManager.isDatabaseLoaded;
 DataManager.isDatabaseLoaded = function() {
     if (!this._loadCount) {this._loadCount = 0;}
     let res = quick_load_check_db_loaded.call(this);
@@ -1999,6 +2141,7 @@ Scene_ModManage.prototype.initialize = function() {
 
 Scene_ModManage.prototype.create = function() {
     Scene_Base.prototype.create.call(this);
+
     const showModCreationTab = fs.existsSync(ModManager._base);
     const activeSaveTab = DataManager.isAnySavefileExists();
 
@@ -2013,6 +2156,8 @@ Scene_ModManage.prototype.create = function() {
     }
 
     this.restoreActive();
+
+    this.createVarReplacePromptWindow();
 };
 
 Scene_ModManage.prototype.terminate = function() {
@@ -2054,6 +2199,57 @@ Scene_ModManage.prototype.createPatchCreateWindow = function() {
     this.addWindow(this._patchCreateWindow);
 }
 
+Scene_ModManage.prototype.createVarReplacePromptWindow = function() {
+    if (!fs.existsSync(path.join(ModManager._path, ModManager._varReplaceReceipt))) {
+        //Create shade sprite to cover other windows
+        //Draw description text on it
+        this.createShadeSprite();
+        //Create yes-no command window
+        this.createOverwriteConfWindow();
+        //Set control to be none of the windows
+        this._commandWindow.deactivate();
+        //Add callbacks
+        this._confirmWindow.setHandler('Yes', this.convertGameScriptsVar.bind(this));
+        this._confirmWindow.setHandler('No', this.restoreActive.bind(this));
+        //On either, close the prompt, hide the shade sprite, restore control to normal
+        //  ModTypeCommand window, but on "Yes" run purge function AND create the receipt file,
+        //  because the purge function does not do that itself
+    }
+}
+
+Scene_ModManage.prototype.convertGameScriptsVar = function() {
+    ModManager.projectVarPass();
+    //write receipt file
+    fs.writeFileSync(path.join(ModManager._path, ModManager._varReplaceReceipt), "done", {encoding: 'utf8'});
+    this.restoreActive();
+}
+
+Scene_ModManage.prototype.createShadeSprite = function() {
+    this._tintSprite = new Sprite();
+    this._tintSprite.bitmap = new Bitmap(Graphics.boxWidth, Graphics.boxHeight);
+    this._tintSprite.bitmap.fillAll('#00000088');
+    let width = Graphics.boxWidth*(2.0/3.0);
+    let text = "To combat the possibility of a conflict arising from loading\n"
+    this._tintSprite.bitmap.drawText(text, (Graphics.boxWidth - width)/2.0, this._commandWindow.height+12, width, 32, 'left');
+    text     = "similar script files, it is highly recommended that you allow\n"
+    this._tintSprite.bitmap.drawText(text, (Graphics.boxWidth - width)/2.0, this._commandWindow.height+48, width, 32, 'left');
+    text     = "this script to modify the existing plugins in your game directory.\n"
+    this._tintSprite.bitmap.drawText(text, (Graphics.boxWidth - width)/2.0, this._commandWindow.height+84, width, 32, 'left');
+    text     = "It only needs to be run once, unless new js files are added by\n"
+    this._tintSprite.bitmap.drawText(text, (Graphics.boxWidth - width)/2.0, this._commandWindow.height+120, width, 32, 'left');
+    text     = "something other than a patch."
+    let shortwidth = width * 0.42;
+    this._tintSprite.bitmap.drawText(text, (Graphics.boxWidth - width)/2.0, this._commandWindow.height+156, shortwidth, 32, 'left');
+    this._tintSprite.visible = true;
+    this.addChild(this._tintSprite);
+}
+
+Scene_ModManage.prototype.createOverwriteConfWindow = function() {
+    this._confirmWindow = new Window_CommandList(['Yes', 'No'], (1.0/3.0)*Graphics.boxWidth, (1.0/2.0)*Graphics.boxHeight+40, {'maxcols':2,'width':(1.0/3.0)*Graphics.boxWidth});
+    this._confirmWindow.select(0); //Default to Yes
+    this.addChild(this._confirmWindow);
+};
+
 Scene_ModManage.prototype.restoreActive = function() {
     this._commandWindow.activate();
     this._commandWindow.open();
@@ -2071,6 +2267,12 @@ Scene_ModManage.prototype.restoreActive = function() {
         this._patchCreateWindow.close();
         this._patchCreateWindow.deactivate();
         this._patchCreateWindow.hide();
+    }
+    if (this._confirmWindow) {
+        this._tintSprite.visible = false;
+        this._confirmWindow.close();
+        this._confirmWindow.deactivate();
+        this._confirmWindow.hide();
     }
 }
 
@@ -4231,16 +4433,6 @@ Array.prototype.equals = function (arr) {
 //TODO - since it changed from "read from src, write to temp", we can now add more conditions (oh boy) that first
 //  check if the temp version of the file exists (to see if we're apply a 2nd, 3rd, etc patch). And if we aren't, then
 //  instead of copying a json diff as "the patched file" we can alert about an error applying the diff, and abort
-
-//TODO - Another weakness was discovered in the "modded script sanitization" approach: if a core ("rpg_") script
-//  (not a plugin) is modified in the plugin, then any function in it that has ALREADY been modified by a
-//  vanilla plugin won't match, even if it actually isn't changed when compared to the corresponding function
-//  in the corresponding vanilla source file. Meanwhile, the plugin that, in vanilla, changes the function,
-//  might not be changed by the mod. Therefore, when it loads the mod, it loads the rpg base file, reverting
-//  some functions, and never loads a plugin over it to re-modify them.
-// TODO - in the attempted fix, the problem is that we're comparing indices into the STRING that represents
-//   the file, against an index into the array that comes from .split(\n)'ing that string. Different units,
-//   that aren't easy to convert between
 
 //TODO: Once again, supporting the ability to apply multiple patches causes a problem that I did
 // not initially realize: suppose we have a file that does not exist in the original and is added
